@@ -1,13 +1,13 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Database, Table } from "lucide-react";
+import { Database, Table, Upload, Download } from "lucide-react";
 import { toast } from "sonner";
 import { DiagramState } from "@/types";
+import SQLImporter from "./SQLImporter";
 
 interface SidebarProps {
   addNewTable: () => void;
@@ -27,6 +27,7 @@ const Sidebar = ({
   const [diagramName, setDiagramName] = useState("My ERD");
   const [diagramDescription, setDiagramDescription] = useState("");
   const [savedDiagrams, setSavedDiagrams] = useState<{id: string, name: string, date: string, data: DiagramState}[]>([]);
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   // Save current diagram
   const handleSave = () => {
@@ -91,6 +92,46 @@ const Sidebar = ({
     }
   };
 
+  // Export diagram as SQL
+  const exportAsSQL = () => {
+    if (currentDiagram.nodes.length === 0) {
+      toast.error("No tables to export");
+      return;
+    }
+    
+    try {
+      // This function would need to be implemented in sqlGenerator.ts
+      // For now, we'll simulate by triggering a download of the SQL code from SQLPanel
+      const sqlElement = document.querySelector('.sql-code');
+      if (!sqlElement) {
+        toast.error("Could not find SQL code");
+        return;
+      }
+      
+      const sqlText = sqlElement.textContent || '';
+      const blob = new Blob([sqlText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${diagramName.replace(/\s+/g, '_')}_schema.sql`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success("SQL exported successfully");
+    } catch (error) {
+      console.error("Error exporting SQL:", error);
+      toast.error("Failed to export SQL");
+    }
+  };
+
+  // Handle SQL import
+  const handleSQLImport = (importedDiagram: DiagramState) => {
+    onLoadDiagram(importedDiagram);
+  };
+
   return (
     <div className="w-64 border-r bg-white flex flex-col h-full">
       <div className="p-4 border-b">
@@ -120,6 +161,26 @@ const Sidebar = ({
               Add New Table
             </Button>
             
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                onClick={() => setShowImportDialog(true)}
+                variant="outline"
+                className="flex items-center justify-center"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Import SQL
+              </Button>
+              
+              <Button 
+                onClick={exportAsSQL}
+                variant="outline"
+                className="flex items-center justify-center"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export SQL
+              </Button>
+            </div>
+            
             <Button 
               onClick={onNewDiagram}
               variant="outline"
@@ -137,6 +198,7 @@ const Sidebar = ({
               <li>• Add columns and set their properties</li>
               <li>• Drag connections between tables to create relationships</li>
               <li>• View the generated SQL code in the panel below</li>
+              <li>• Import existing SQL schema or export your design</li>
             </ul>
           </div>
         </TabsContent>
@@ -225,6 +287,13 @@ const Sidebar = ({
           </div>
         </TabsContent>
       </Tabs>
+      
+      {/* SQL Import Dialog */}
+      <SQLImporter 
+        isOpen={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        onImport={handleSQLImport}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 
-import { DiagramState, Column, TableData, Constraint } from "../types";
+import { DiagramState, Column, TableData, Constraint, RelationshipSuggestion } from "../types";
 
 export function generateSQL(state: DiagramState): string {
   const { nodes, edges } = state;
@@ -161,4 +161,145 @@ export function suggestRelationships(nodes: TableData[]): RelationshipSuggestion
   }
   
   return suggestions;
+}
+
+// Parse SQL to generate diagram
+export function parseSQL(sql: string): DiagramState {
+  const lines = sql.split('\n');
+  const nodes: TableData[] = [];
+  const edges: any[] = [];
+  
+  let currentTable: TableData | null = null;
+  let tableName = '';
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Check for CREATE TABLE statement
+    const createTableMatch = line.match(/CREATE\s+TABLE\s+[`"]?([^`"\s(]+)[`"]?\s*\(/i);
+    if (createTableMatch) {
+      tableName = createTableMatch[1].replace(/[`"]/g, '');
+      const tableId = `table-${Date.now()}-${nodes.length}`;
+      
+      currentTable = {
+        id: tableId,
+        tableName,
+        columns: []
+      };
+      
+      continue;
+    }
+    
+    // End of table definition
+    if (line === ');' && currentTable) {
+      nodes.push(currentTable);
+      currentTable = null;
+      continue;
+    }
+    
+    // Skip if not in a table definition
+    if (!currentTable) continue;
+    
+    // Check for column definition
+    const columnMatch = line.match(/^\s*[`"]?([^`"\s,]+)[`"]?\s+([A-Za-z0-9()]+)(.+)?[,]?$/);
+    if (columnMatch && !line.startsWith('PRIMARY KEY') && !line.startsWith('FOREIGN KEY') && !line.startsWith('CHECK')) {
+      const columnName = columnMatch[1];
+      const columnType = columnMatch[2].toUpperCase();
+      const columnOptions = columnMatch[3] || '';
+      
+      const isPrimaryKey = /PRIMARY\s+KEY/i.test(columnOptions);
+      const isNullable = !/NOT\s+NULL/i.test(columnOptions);
+      const isUnique = /UNIQUE/i.test(columnOptions);
+      
+      const lengthMatch = columnType.match(/\((\d+)\)/);
+      const length = lengthMatch ? parseInt(lengthMatch[1]) : undefined;
+      
+      const constraints: Constraint[] = [];
+      
+      // Check for DEFAULT constraint
+      const defaultMatch = columnOptions.match(/DEFAULT\s+([^,\s]+)/i);
+      if (defaultMatch) {
+        constraints.push({
+          type: 'DEFAULT',
+          defaultValue: defaultMatch[1]
+        });
+      }
+      
+      // Check for CHECK constraint
+      const checkMatch = columnOptions.match(/CHECK\s+\((.+?)\)/i);
+      if (checkMatch) {
+        constraints.push({
+          type: 'CHECK',
+          expression: checkMatch[1]
+        });
+      }
+      
+      const column: Column = {
+        id: `${currentTable.id}-col-${currentTable.columns.length}`,
+        name: columnName,
+        type: columnType.split('(')[0] as any,
+        length,
+        isPrimaryKey,
+        isForeignKey: false,
+        isNullable,
+        isUnique,
+        constraints
+      };
+      
+      currentTable.columns.push(column);
+    }
+    
+    // Check for FOREIGN KEY constraints
+    const fkMatch = line.match(/FOREIGN\s+KEY\s+\(\s*[`"]?([^`"\s)]+)[`"]?\s*\)\s+REFERENCES\s+[`"]?([^`"\s(]+)[`"]?\s*\(\s*[`"]?([^`"\s)]+)[`"]?\s*\)/i);
+    if (fkMatch && currentTable) {
+      const fkColumnName = fkMatch[1];
+      const refTableName = fkMatch[2];
+      const refColumnName = fkMatch[3];
+      
+      // Find the column
+      const column = currentTable.columns.find(col => col.name === fkColumnName);
+      if (column) {
+        column.isForeignKey = true;
+        column.referencesTable = refTableName;
+        column.referencesColumn = refColumnName;
+      }
+    }
+  }
+  
+  // Generate edges based on foreign keys
+  for (const table of nodes) {
+    for (const column of table.columns) {
+      if (column.isForeignKey && column.referencesTable && column.referencesColumn) {
+        const targetTable = nodes.find(t => t.tableName === column.referencesTable);
+        if (targetTable) {
+          edges.push({
+            id: `edge-${Date.now()}-${edges.length}`,
+            source: targetTable.id,
+            target: table.id,
+            animated: true,
+            style: { stroke: '#525252' },
+            markerEnd: {
+              type: 'arrowclosed',
+              color: '#525252',
+            },
+            data: {
+              relationshipType: 'one-to-many',
+              sourceColumn: column.referencesColumn,
+              targetColumn: column.name
+            }
+          });
+        }
+      }
+    }
+  }
+  
+  return {
+    nodes: nodes.map((tableData, index) => ({
+      id: tableData.id,
+      type: 'tableNode',
+      position: { x: 100 + (index * 300), y: 100 + (index * 50) },
+      data: tableData
+    })),
+    edges
+  };
 }
