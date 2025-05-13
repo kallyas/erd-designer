@@ -127,9 +127,9 @@ const ERDCanvas = forwardRef(({
 
   // Initialize from initial diagram if provided
   useEffect(() => {
-    if (initialDiagram && initialDiagram.nodes.length > 0) {
-      setNodes(initialDiagram.nodes);
-      setEdges(initialDiagram.edges);
+    if (initialDiagram) {
+      setNodes(initialDiagram.nodes || []);
+      setEdges(initialDiagram.edges || []);
     }
   }, [initialDiagram, setNodes, setEdges]);
 
