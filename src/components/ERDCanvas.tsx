@@ -8,7 +8,6 @@ import {
   useEdgesState,
   addEdge,
   Connection,
-  Edge,
   Node,
   MarkerType,
   useReactFlow,
@@ -33,19 +32,14 @@ import {
 import { suggestRelationships } from "@/utils/sqlGenerator";
 import { suggestAdvancedRelationships } from "@/utils/aiSuggestions";
 import { 
-  GitBranch, 
   Users, 
   Zap, 
-  Database, 
-  FileExport, 
   LayoutGrid,
   Share2,
   Maximize,
   Minimize,
   Trash2,
   Lock,
-  Unlock,
-  Copy,
   Layers,
   Flashlight,
   Workflow,
