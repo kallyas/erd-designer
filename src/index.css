@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,4 +99,131 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.react-flow__node {
+  border-radius: 6px;
+  padding: 0;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+}
+
+.nodrag {
+  cursor: auto;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.table-node {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  min-width: 180px;
+}
+
+.table-node__header {
+  background-color: #8B5CF6;
+  color: white;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.table-node__content {
+  padding: 0;
+}
+
+.table-node__row {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.table-node__row:last-child {
+  border-bottom: none;
+}
+
+.table-node__row-pk {
+  margin-right: 8px;
+  color: #8B5CF6;
+  font-weight: bold;
+}
+
+.table-node__row-fk {
+  margin-right: 8px;
+  color: #0EA5E9;
+  font-weight: bold;
+}
+
+.table-node__row-name {
+  flex: 1;
+  margin-right: 8px;
+}
+
+.table-node__row-type {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.table-node__add-column {
+  width: 100%;
+  padding: 6px 12px;
+  text-align: center;
+  background: #f8fafc;
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  cursor: pointer;
+  color: #8B5CF6;
+}
+
+.table-node__add-column:hover {
+  background: #f1f5f9;
+}
+
+.table-panel {
+  height: 100%;
+  overflow: auto;
+}
+
+.sql-panel {
+  height: 100%;
+  overflow: auto;
+  background: #1E293B;
+  color: #E2E8F0;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.sql-panel__content {
+  padding: 1rem;
+  white-space: pre-wrap;
+}
+
+.primary-key {
+  color: #f472b6;
+}
+
+.table-name {
+  color: #818cf8;
+}
+
+.keyword {
+  color: #38bdf8;
+}
+
+.data-type {
+  color: #4ade80;
+}
+
+.constraint {
+  color: #fb923c;
 }
