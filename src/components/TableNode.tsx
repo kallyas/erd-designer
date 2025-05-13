@@ -20,7 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { TableData, ColumnType, Column } from "@/types";
+import { TableData, ColumnType, Column, Constraint } from "@/types";
+import { Key, Database, Table, Check, Fingerprint } from "lucide-react";
 
 interface TableNodeProps {
   id: string;
@@ -37,6 +38,11 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
   const [newColumnLength, setNewColumnLength] = useState<number>(255);
   const [isPrimaryKey, setIsPrimaryKey] = useState(false);
   const [isNullable, setIsNullable] = useState(true);
+  const [isUnique, setIsUnique] = useState(false);
+  const [hasDefaultValue, setHasDefaultValue] = useState(false);
+  const [defaultValue, setDefaultValue] = useState("");
+  const [hasCheckConstraint, setHasCheckConstraint] = useState(false);
+  const [checkExpression, setCheckExpression] = useState("");
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
 
   const handleSaveTableName = () => {
@@ -47,14 +53,32 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
   const handleAddColumn = () => {
     if (!newColumnName.trim()) return;
 
+    const constraints: Constraint[] = [];
+    
+    if (hasDefaultValue && defaultValue) {
+      constraints.push({
+        type: 'DEFAULT',
+        defaultValue
+      });
+    }
+    
+    if (hasCheckConstraint && checkExpression) {
+      constraints.push({
+        type: 'CHECK',
+        expression: checkExpression
+      });
+    }
+
     const newColumn: Column = {
-      id: `${id}-col-${Date.now()}`,
+      id: editingColumnId || `${id}-col-${Date.now()}`,
       name: newColumnName,
       type: newColumnType,
       length: newColumnType === "VARCHAR" ? newColumnLength : undefined,
       isPrimaryKey,
       isForeignKey: false,
       isNullable,
+      isUnique,
+      constraints: constraints.length > 0 ? constraints : undefined
     };
 
     if (editingColumnId) {
@@ -68,13 +92,22 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
     }
 
     // Reset form
+    resetForm();
+    setNewColumnDialogOpen(false);
+  };
+
+  const resetForm = () => {
     setNewColumnName("");
     setNewColumnType("VARCHAR");
     setNewColumnLength(255);
     setIsPrimaryKey(false);
     setIsNullable(true);
+    setIsUnique(false);
+    setHasDefaultValue(false);
+    setDefaultValue("");
+    setHasCheckConstraint(false);
+    setCheckExpression("");
     setEditingColumnId(null);
-    setNewColumnDialogOpen(false);
   };
 
   const handleEditColumn = (column: Column) => {
@@ -83,6 +116,16 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
     setNewColumnLength(column.length || 255);
     setIsPrimaryKey(column.isPrimaryKey);
     setIsNullable(column.isNullable);
+    setIsUnique(column.isUnique || false);
+    
+    const defaultConstraint = column.constraints?.find(c => c.type === 'DEFAULT');
+    setHasDefaultValue(!!defaultConstraint);
+    setDefaultValue(defaultConstraint?.defaultValue || "");
+    
+    const checkConstraint = column.constraints?.find(c => c.type === 'CHECK');
+    setHasCheckConstraint(!!checkConstraint);
+    setCheckExpression(checkConstraint?.expression || "");
+    
     setEditingColumnId(column.id);
     setNewColumnDialogOpen(true);
   };
@@ -98,41 +141,44 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
         position={Position.Right}
         id={`${id}-source`}
         isConnectable={isConnectable}
-        className="w-2 h-2 bg-erd-primary-dark"
+        className="bg-mono-800 border-white"
       />
       <Handle
         type="target"
         position={Position.Left}
         id={`${id}-target`}
         isConnectable={isConnectable}
-        className="w-2 h-2 bg-erd-bright-blue"
+        className="bg-mono-800 border-white"
       />
       
-      <div className="table-node__header bg-erd-primary">
+      <div className="table-node__header">
         {isEditing ? (
           <div className="flex items-center space-x-2">
             <Input 
               value={tableName} 
               onChange={(e) => setTableName(e.target.value)}
-              className="text-black h-6 py-1 px-2 text-sm"
+              className="text-mono-900 h-7 py-1 px-2 text-sm"
             />
             <Button 
               onClick={handleSaveTableName} 
               size="sm" 
               variant="default"
-              className="h-6 py-1 px-2 text-xs bg-white text-erd-primary hover:bg-gray-100"
+              className="h-7 py-1 px-3 text-xs bg-mono-100 text-mono-900 hover:bg-mono-200"
             >
               Save
             </Button>
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <span>{data.tableName}</span>
+            <div className="flex items-center gap-2">
+              <Database className="h-4 w-4 text-mono-300" />
+              <span>{data.tableName}</span>
+            </div>
             <Button 
               onClick={() => setIsEditing(true)} 
               variant="ghost" 
               size="sm"
-              className="h-5 w-5 p-0 text-white hover:bg-erd-primary-dark hover:text-white"
+              className="h-6 w-6 p-0 text-mono-100 hover:bg-mono-700 hover:text-mono-100 rounded-full"
             >
               ✏️
             </Button>
@@ -143,8 +189,12 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
       <div className="table-node__content">
         {data.columns.map(column => (
           <div key={column.id} className="table-node__row">
-            {column.isPrimaryKey && <span className="table-node__row-pk">🔑</span>}
-            {column.isForeignKey && <span className="table-node__row-fk">🔗</span>}
+            <div className="flex items-center">
+              {column.isPrimaryKey && <span className="table-node__row-pk" title="Primary Key"><Key className="h-3.5 w-3.5" /></span>}
+              {column.isForeignKey && <span className="table-node__row-fk" title="Foreign Key"><Fingerprint className="h-3.5 w-3.5" /></span>}
+              {column.isUnique && <span className="table-node__row-unique" title="Unique Constraint"><Table className="h-3.5 w-3.5" /></span>}
+              {column.constraints?.some(c => c.type === 'CHECK') && <span className="table-node__row-check" title="Check Constraint"><Check className="h-3.5 w-3.5" /></span>}
+            </div>
             <span className="table-node__row-name">{column.name}</span>
             <span className="table-node__row-type">
               {column.type}{column.length ? `(${column.length})` : ''}
@@ -155,7 +205,7 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
                 onClick={() => handleEditColumn(column)} 
                 variant="ghost" 
                 size="sm"
-                className="h-5 w-5 p-0 text-gray-500 hover:bg-gray-100"
+                className="h-5 w-5 p-0 text-mono-500 hover:bg-mono-200 hover:text-mono-700 rounded-full"
               >
                 ✏️
               </Button>
@@ -163,7 +213,7 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
                 onClick={() => handleDeleteColumn(column.id)} 
                 variant="ghost" 
                 size="sm"
-                className="h-5 w-5 p-0 text-gray-500 hover:bg-gray-100"
+                className="h-5 w-5 p-0 text-mono-500 hover:bg-mono-200 hover:text-mono-700 rounded-full"
               >
                 🗑️
               </Button>
@@ -175,12 +225,7 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
       <button 
         className="table-node__add-column" 
         onClick={() => {
-          setEditingColumnId(null); 
-          setNewColumnName("");
-          setNewColumnType("VARCHAR");
-          setNewColumnLength(255);
-          setIsPrimaryKey(false);
-          setIsNullable(true);
+          resetForm();
           setNewColumnDialogOpen(true);
         }}
       >
@@ -188,7 +233,7 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
       </button>
 
       <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{editingColumnId ? "Edit Column" : "Add New Column"}</DialogTitle>
           </DialogHeader>
@@ -238,22 +283,79 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
               </div>
             )}
             
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="isPrimaryKey" 
-                checked={isPrimaryKey}
-                onCheckedChange={(checked) => setIsPrimaryKey(checked as boolean)} 
-              />
-              <Label htmlFor="isPrimaryKey">Primary Key</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="isPrimaryKey" 
+                  checked={isPrimaryKey}
+                  onCheckedChange={(checked) => {
+                    setIsPrimaryKey(checked as boolean);
+                    if (checked) {
+                      setIsNullable(false);
+                      setIsUnique(true);
+                    }
+                  }}
+                />
+                <Label htmlFor="isPrimaryKey">Primary Key</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="isNullable" 
+                  checked={isNullable}
+                  disabled={isPrimaryKey}
+                  onCheckedChange={(checked) => setIsNullable(checked as boolean)} 
+                />
+                <Label htmlFor="isNullable">Nullable</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="isUnique" 
+                  checked={isUnique || isPrimaryKey}
+                  disabled={isPrimaryKey}
+                  onCheckedChange={(checked) => setIsUnique(checked as boolean)} 
+                />
+                <Label htmlFor="isUnique">Unique</Label>
+              </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="isNullable" 
-                checked={isNullable}
-                onCheckedChange={(checked) => setIsNullable(checked as boolean)} 
-              />
-              <Label htmlFor="isNullable">Nullable</Label>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="hasDefault" 
+                  checked={hasDefaultValue}
+                  onCheckedChange={(checked) => setHasDefaultValue(checked as boolean)}
+                />
+                <Label htmlFor="hasDefault">Default Value</Label>
+              </div>
+              
+              {hasDefaultValue && (
+                <Input 
+                  placeholder="Enter default value" 
+                  value={defaultValue}
+                  onChange={(e) => setDefaultValue(e.target.value)}
+                />
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="hasCheck" 
+                  checked={hasCheckConstraint}
+                  onCheckedChange={(checked) => setHasCheckConstraint(checked as boolean)}
+                />
+                <Label htmlFor="hasCheck">Check Constraint</Label>
+              </div>
+              
+              {hasCheckConstraint && (
+                <Input 
+                  placeholder="e.g. price > 0" 
+                  value={checkExpression}
+                  onChange={(e) => setCheckExpression(e.target.value)}
+                />
+              )}
             </div>
           </div>
           <DialogFooter>

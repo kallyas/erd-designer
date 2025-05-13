@@ -1,5 +1,5 @@
 
-import { DiagramState, Column, TableData } from "../types";
+import { DiagramState, Column, TableData, Constraint } from "../types";
 
 export function generateSQL(state: DiagramState): string {
   const { nodes, edges } = state;
@@ -22,6 +22,17 @@ export function generateSQL(state: DiagramState): string {
         columnSql += " NOT NULL";
       }
       
+      // Add DEFAULT constraint if applicable
+      const defaultConstraint = column.constraints?.find(c => c.type === 'DEFAULT');
+      if (defaultConstraint && defaultConstraint.defaultValue) {
+        columnSql += ` DEFAULT ${defaultConstraint.defaultValue}`;
+      }
+      
+      // Check for UNIQUE constraint at column level
+      if (column.isUnique) {
+        columnSql += " UNIQUE";
+      }
+      
       return columnSql;
     });
     
@@ -39,6 +50,19 @@ export function generateSQL(state: DiagramState): string {
           `  FOREIGN KEY (${formatColumnName(fk.name)}) REFERENCES ${formatTableName(fk.referencesTable!)}(${formatColumnName(fk.referencesColumn!)})`
         );
       });
+    
+    // Add CHECK constraints
+    tableData.columns.forEach(column => {
+      const checkConstraints = column.constraints?.filter(c => c.type === 'CHECK' && c.expression);
+      if (checkConstraints && checkConstraints.length > 0) {
+        checkConstraints.forEach(constraint => {
+          columnDefinitions.push(`  CHECK (${constraint.expression})`);
+        });
+      }
+    });
+    
+    // Add UNIQUE constraints for multiple columns if needed
+    // (For now we just handle single column unique constraints at the column level)
     
     sql += columnDefinitions.join(",\n");
     sql += "\n);\n\n";
@@ -83,7 +107,7 @@ function formatColumnType(column: Column): string {
 export function formatSQLForDisplay(sql: string): string {
   // Highlight SQL keywords
   let formattedSql = sql
-    .replace(/\b(CREATE|TABLE|PRIMARY|KEY|FOREIGN|REFERENCES|INT|VARCHAR|TEXT|BOOLEAN|DATE|TIMESTAMP|FLOAT|DOUBLE|DECIMAL|NOT|NULL)\b/g, match => 
+    .replace(/\b(CREATE|TABLE|PRIMARY|KEY|FOREIGN|REFERENCES|INT|VARCHAR|TEXT|BOOLEAN|DATE|TIMESTAMP|FLOAT|DOUBLE|DECIMAL|NOT|NULL|UNIQUE|CHECK|DEFAULT)\b/g, match => 
       `<span class="keyword">${match}</span>`
     )
     // Highlight table names
@@ -95,9 +119,46 @@ export function formatSQLForDisplay(sql: string): string {
       `<span class="data-type">${dataType}${size || ''}</span>`
     )
     // Highlight constraints
-    .replace(/<span class="keyword">(PRIMARY|KEY|FOREIGN|REFERENCES|NOT|NULL)<\/span>/g, (match, constraint) => 
+    .replace(/<span class="keyword">(PRIMARY|KEY|FOREIGN|REFERENCES|NOT|NULL|UNIQUE|CHECK|DEFAULT)<\/span>/g, (match, constraint) => 
       `<span class="constraint">${constraint}</span>`
     );
   
   return formattedSql;
+}
+
+// Function to suggest relationships between tables based on column names and data types
+export function suggestRelationships(nodes: TableData[]): RelationshipSuggestion[] {
+  const suggestions: RelationshipSuggestion[] = [];
+  
+  for (const sourceTable of nodes) {
+    for (const targetTable of nodes) {
+      if (sourceTable.id === targetTable.id) continue;
+      
+      // Look for potential foreign key relationships
+      for (const targetColumn of targetTable.columns) {
+        // Check if column name matches pattern "tablename_id" or "tablenameid"
+        const possibleSourceTableName = sourceTable.tableName.toLowerCase();
+        const columnNameLower = targetColumn.name.toLowerCase();
+        
+        if (columnNameLower === `${possibleSourceTableName}_id` || 
+            columnNameLower === `${possibleSourceTableName}id`) {
+          
+          // Find the primary key in the source table
+          const sourcePK = sourceTable.columns.find(col => col.isPrimaryKey);
+          
+          if (sourcePK && targetColumn.type === sourcePK.type) {
+            suggestions.push({
+              sourceTable: sourceTable.tableName,
+              targetTable: targetTable.tableName,
+              relationshipType: 'one-to-many',
+              confidence: 0.8,
+              reason: `Column name "${targetColumn.name}" in "${targetTable.tableName}" suggests a relationship with "${sourceTable.tableName}"`
+            });
+          }
+        }
+      }
+    }
+  }
+  
+  return suggestions;
 }

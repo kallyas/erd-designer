@@ -12,6 +12,12 @@ export type ColumnType =
   | 'DOUBLE'
   | 'DECIMAL';
 
+export interface Constraint {
+  type: 'CHECK' | 'UNIQUE' | 'DEFAULT';
+  expression?: string; // For CHECK constraints
+  defaultValue?: string; // For DEFAULT constraints
+}
+
 export interface Column {
   id: string;
   name: string;
@@ -20,6 +26,8 @@ export interface Column {
   isPrimaryKey: boolean;
   isForeignKey: boolean;
   isNullable: boolean;
+  isUnique?: boolean;
+  constraints?: Constraint[];
   referencesTable?: string;
   referencesColumn?: string;
 }
@@ -33,9 +41,11 @@ export interface TableData {
 
 export type TableNode = Node<TableData>;
 
+export type RelationshipType = 'one-to-one' | 'one-to-many' | 'many-to-many';
+
 export interface RelationshipEdge extends Edge {
   data?: {
-    relationshipType: 'one-to-one' | 'one-to-many' | 'many-to-many';
+    relationshipType: RelationshipType;
     sourceColumn: string;
     targetColumn: string;
     [key: string]: unknown; // Add index signature
@@ -45,4 +55,12 @@ export interface RelationshipEdge extends Edge {
 export interface DiagramState {
   nodes: TableNode[];
   edges: RelationshipEdge[];
+}
+
+export interface RelationshipSuggestion {
+  sourceTable: string;
+  targetTable: string;
+  relationshipType: RelationshipType;
+  confidence: number; // 0-1 value indicating confidence in suggestion
+  reason: string;
 }

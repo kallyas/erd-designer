@@ -1,5 +1,5 @@
 
-import { useCallback, useState, forwardRef, useImperativeHandle } from "react";
+import { useCallback, useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import {
   ReactFlow,
   Controls,
@@ -16,7 +16,8 @@ import {
 import "@xyflow/react/dist/style.css"; // Fixed import path for styles
 
 import TableNode from "./TableNode";
-import { TableData, TableNode as TableNodeType, RelationshipEdge } from "@/types";
+import { TableData, TableNode as TableNodeType, RelationshipEdge, RelationshipSuggestion } from "@/types";
+import { suggestRelationships } from "@/utils/sqlGenerator";
 
 const nodeTypes = {
   tableNode: TableNode,
@@ -33,7 +34,20 @@ const initialEdges: RelationshipEdge[] = [];
 const ERDCanvas = forwardRef(({ onNodesChange, onEdgesChange }: ERDCanvasProps, ref) => {
   const [nodes, setNodes, onNodesChangeInternal] = useNodesState<TableNodeType>(initialNodes);
   const [edges, setEdges, onEdgesChangeInternal] = useEdgesState<RelationshipEdge>(initialEdges);
+  const [suggestions, setSuggestions] = useState<RelationshipSuggestion[]>([]);
+  const [showSuggestion, setShowSuggestion] = useState<{x: number, y: number, suggestion: RelationshipSuggestion} | null>(null);
   const reactFlowInstance = useReactFlow();
+
+  // Generate relationship suggestions when nodes change
+  useEffect(() => {
+    if (nodes.length > 1) {
+      const tableData = nodes.map(node => node.data);
+      const newSuggestions = suggestRelationships(tableData);
+      setSuggestions(newSuggestions);
+    } else {
+      setSuggestions([]);
+    }
+  }, [nodes]);
 
   // Expose addNewTable to parent
   useImperativeHandle(ref, () => ({
@@ -64,10 +78,10 @@ const ERDCanvas = forwardRef(({ onNodesChange, onEdgesChange }: ERDCanvasProps, 
       id: `edge-${Date.now()}`,
       ...connection,
       animated: true,
-      style: { stroke: '#8B5CF6' },
+      style: { stroke: '#525252' },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: '#8B5CF6',
+        color: '#525252',
       },
       data: {
         relationshipType: 'one-to-many',
@@ -167,6 +181,26 @@ const ERDCanvas = forwardRef(({ onNodesChange, onEdgesChange }: ERDCanvasProps, 
     }, 0);
   }, [setNodes, nodes, onNodesChange]);
 
+  const handleNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node) => {
+    const relevantSuggestions = suggestions.filter(
+      s => s.sourceTable === node.data.tableName || s.targetTable === node.data.tableName
+    );
+    
+    if (relevantSuggestions.length > 0) {
+      // Get the best suggestion
+      const bestSuggestion = relevantSuggestions.sort((a, b) => b.confidence - a.confidence)[0];
+      setShowSuggestion({
+        x: event.clientX,
+        y: event.clientY - 100,
+        suggestion: bestSuggestion
+      });
+    }
+  }, [suggestions]);
+
+  const handleNodeMouseLeave = useCallback(() => {
+    setShowSuggestion(null);
+  }, []);
+
   return (
     <div className="h-full w-full">
       <ReactFlow
@@ -175,14 +209,39 @@ const ERDCanvas = forwardRef(({ onNodesChange, onEdgesChange }: ERDCanvasProps, 
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
+        onNodeMouseEnter={handleNodeMouseEnter}
+        onNodeMouseLeave={handleNodeMouseLeave}
         nodeTypes={nodeTypes}
         fitView
         snapToGrid
         snapGrid={[15, 15]}
+        defaultEdgeOptions={{
+          style: { stroke: '#525252' },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#525252',
+          },
+        }}
       >
-        <Background />
+        <Background color="#a3a3a3" gap={16} />
         <Controls />
       </ReactFlow>
+      
+      {showSuggestion && (
+        <div 
+          className="relationship-suggestion"
+          style={{
+            position: 'absolute',
+            left: showSuggestion.x + 10,
+            top: showSuggestion.y - 10
+          }}
+        >
+          <p className="font-semibold mb-1">Suggested Relationship</p>
+          <p className="text-xs">{`${showSuggestion.suggestion.sourceTable} → ${showSuggestion.suggestion.targetTable}`}</p>
+          <p className="text-xs">{`Type: ${showSuggestion.suggestion.relationshipType}`}</p>
+          <p className="text-xs italic mt-1">{showSuggestion.suggestion.reason}</p>
+        </div>
+      )}
     </div>
   );
 });
