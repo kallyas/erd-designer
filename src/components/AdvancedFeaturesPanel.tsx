@@ -89,6 +89,7 @@ const AdvancedFeaturesPanel = ({
   const [colorScheme, setColorScheme] = useState("default");
   const [newCustomTypeName, setNewCustomTypeName] = useState("");
   const [newCustomTypeBase, setNewCustomTypeBase] = useState("VARCHAR");
+  const [activeTab, setActiveTab] = useState("visualization");
 
   // Load initial data
   useEffect(() => {
@@ -192,7 +193,7 @@ const AdvancedFeaturesPanel = ({
 
   return (
     <div className="p-4 border-t">
-      <Tabs defaultValue="visualization">
+      <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="visualization">
         <TabsList className="grid grid-cols-6 mb-4">
           <TabsTrigger value="visualization">
             <LayoutDashboard className="h-4 w-4 mr-1" />
