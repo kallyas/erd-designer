@@ -292,3 +292,19 @@
     background-color: hsl(var(--sidebar-background));
   }
 }
+
+.editor-dark { background-color: #1E1E1E; color: #D4D4D4; }
+.editor-dark .keyword { color: #569CD6; }
+.editor-dark .identifier { color: #9CDCFE; }
+.editor-dark .string-literal { color: #CE9178; }
+.editor-dark .numeric-literal { color: #B5CEA8; }
+.editor-dark .comment { color: #6A9955; }
+.editor-dark .data-type { color: #4EC9B0; }
+
+.editor-light { background-color: #FFFFFF; color: #000000; }
+.editor-light .keyword { color: #0000FF; }
+.editor-light .identifier { color: #267F99; }
+.editor-light .string-literal { color: #A31515; }
+.editor-light .numeric-literal { color: #098658; }
+.editor-light .comment { color: #008000; }
+.editor-light .data-type { color: #267F99; }
