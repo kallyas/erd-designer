@@ -1,5 +1,5 @@
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, forwardRef, useImperativeHandle } from "react";
 import {
   ReactFlow,
   Controls,
@@ -13,7 +13,7 @@ import {
   MarkerType,
   useReactFlow,
 } from "@xyflow/react";
-import "xyflow/dist/style.css";
+import "@xyflow/react/dist/style.css"; // Fixed import path for styles
 
 import TableNode from "./TableNode";
 import { TableData, TableNode as TableNodeType, RelationshipEdge } from "@/types";
@@ -30,10 +30,15 @@ interface ERDCanvasProps {
 const initialNodes: TableNodeType[] = [];
 const initialEdges: RelationshipEdge[] = [];
 
-const ERDCanvas = ({ onNodesChange, onEdgesChange }: ERDCanvasProps) => {
-  const [nodes, setNodes, onNodesChangeInternal] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState(initialEdges);
+const ERDCanvas = forwardRef(({ onNodesChange, onEdgesChange }: ERDCanvasProps, ref) => {
+  const [nodes, setNodes, onNodesChangeInternal] = useNodesState<TableNodeType>(initialNodes);
+  const [edges, setEdges, onEdgesChangeInternal] = useEdgesState<RelationshipEdge>(initialEdges);
   const reactFlowInstance = useReactFlow();
+
+  // Expose addNewTable to parent
+  useImperativeHandle(ref, () => ({
+    addNewTable: (position = { x: 100, y: 100 }) => addNewTable(position),
+  }));
 
   // Handle node changes
   const handleNodesChange = useCallback((changes: any) => {
@@ -56,6 +61,7 @@ const ERDCanvas = ({ onNodesChange, onEdgesChange }: ERDCanvasProps) => {
   // Handle connection between nodes
   const onConnect = useCallback((connection: Connection) => {
     const edge: RelationshipEdge = {
+      id: `edge-${Date.now()}`,
       ...connection,
       animated: true,
       style: { stroke: '#8B5CF6' },
@@ -179,6 +185,8 @@ const ERDCanvas = ({ onNodesChange, onEdgesChange }: ERDCanvasProps) => {
       </ReactFlow>
     </div>
   );
-};
+});
+
+ERDCanvas.displayName = "ERDCanvas";
 
 export default ERDCanvas;

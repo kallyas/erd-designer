@@ -5,7 +5,6 @@ import ERDCanvas from "@/components/ERDCanvas";
 import Sidebar from "@/components/Sidebar";
 import SQLPanel from "@/components/SQLPanel";
 import { DiagramState, TableNode, RelationshipEdge } from "@/types";
-import { Resizable } from "@/components/ui/resizable";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 const Index = () => {
@@ -13,7 +12,7 @@ const Index = () => {
     nodes: [],
     edges: []
   });
-  const erdCanvasRef = useRef<any>(null);
+  const erdCanvasRef = useRef<{ addNewTable: (position?: { x: number, y: number }) => void }>(null);
 
   // Handle nodes change
   const handleNodesChange = useCallback((nodes: TableNode[]) => {

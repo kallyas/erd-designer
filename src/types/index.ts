@@ -28,6 +28,7 @@ export interface TableData {
   id: string;
   tableName: string;
   columns: Column[];
+  [key: string]: unknown; // Add index signature to satisfy Record<string, unknown>
 }
 
 export type TableNode = Node<TableData>;
@@ -37,6 +38,7 @@ export interface RelationshipEdge extends Edge {
     relationshipType: 'one-to-one' | 'one-to-many' | 'many-to-many';
     sourceColumn: string;
     targetColumn: string;
+    [key: string]: unknown; // Add index signature
   }
 }
 
