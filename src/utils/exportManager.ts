@@ -2,7 +2,7 @@
 import { DiagramState } from "@/types";
 import { generateSQL } from "@/utils/sqlGenerator";
 
-export type ExportFormat = "sql" | "png" | "pdf" | "json" | "orm";
+export type ExportFormat = "sql" | "png" | "pdf" | "json" | "orm" | "xml" | "svg";
 export type OrmType =
   | "sequelize"
   | "typeorm"
