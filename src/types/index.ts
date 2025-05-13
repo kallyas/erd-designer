@@ -3,8 +3,17 @@ import { Node, Edge } from "@xyflow/react";
 
 export type ColumnType = 
   | 'INT'
+  | 'BIGINT'
+  | 'SMALLINT'
+  | 'TINYINT'
+  | 'MEDIUMINT'
+  | 'INTEGER'
+  | 'SERIAL'
+  | 'BIGSERIAL'
   | 'VARCHAR'
   | 'TEXT'
+  | 'CHAR'
+  | 'BLOB'
   | 'BOOLEAN'
   | 'DATE'
   | 'TIMESTAMP'
@@ -21,7 +30,7 @@ export type ColumnType =
 export interface Constraint {
   type: 'CHECK' | 'UNIQUE' | 'DEFAULT' | 'EXCLUSION' | 'FOREIGN_KEY' | 'NOT_NULL';
   expression?: string; // For CHECK constraints
-  defaultValue?: string; // For DEFAULT constraints
+  defaultValue?: string | number | boolean | null; // For DEFAULT constraints
   excludeExpression?: string; // For EXCLUSION constraints
 }
 
@@ -46,6 +55,13 @@ export interface Column {
   enumValues?: string[]; // For ENUM types
   comment?: string; // Documentation
   validationRules?: string[]; // Business logic validation rules
+  isAutoIncrement?: boolean; // For auto-incrementing fields
+  referencesSchema?: string | null; // For foreign keys, if schema is different
+  onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION'; // For foreign keys
+  onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION'; // For foreign keys
+  shouldCreateIndex?: boolean; // For indexing
+  precision?: number; // For types like DECIMAL(p, s)
+  scale?: number; // For types like DECIMAL(p, s)
 }
 
 export interface TableData {
@@ -88,6 +104,8 @@ export interface RelationshipSuggestion {
   relationshipType: RelationshipType;
   confidence: number; // 0-1 value indicating confidence in suggestion
   reason: string;
+  sourceColumn?: string;
+  targetColumn?: string;
 }
 
 export interface DatabaseDialect {
