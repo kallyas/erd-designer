@@ -4,6 +4,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import ERDCanvas from "@/components/ERDCanvas";
 import Sidebar from "@/components/Sidebar";
 import SQLPanel from "@/components/SQLPanel";
+import AdvancedFeaturesPanel from "@/components/AdvancedFeaturesPanel";
 import { DiagramState, TableNode, RelationshipEdge } from "@/types";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
@@ -12,13 +13,18 @@ const Index = () => {
     nodes: [],
     edges: []
   });
+  const [sqlDialect, setSqlDialect] = useState("mysql");
+  const [activeLayout, setActiveLayout] = useState("default");
+  const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
+  
   const erdCanvasRef = useRef<{ addNewTable: (position?: { x: number, y: number }) => void }>(null);
 
   // Handle nodes change
   const handleNodesChange = useCallback((nodes: TableNode[]) => {
     setDiagramState(prev => ({
       ...prev,
-      nodes
+      nodes,
+      lastModified: new Date()
     }));
   }, []);
 
@@ -26,7 +32,8 @@ const Index = () => {
   const handleEdgesChange = useCallback((edges: RelationshipEdge[]) => {
     setDiagramState(prev => ({
       ...prev,
-      edges
+      edges,
+      lastModified: new Date()
     }));
   }, []);
 
@@ -54,6 +61,20 @@ const Index = () => {
       nodes: [],
       edges: []
     });
+  }, []);
+  
+  // Handle SQL dialect change
+  const handleDialectChange = useCallback((dialect: string) => {
+    setSqlDialect(dialect);
+    setDiagramState(prev => ({
+      ...prev,
+      dialect
+    }));
+  }, []);
+  
+  // Handle layout change
+  const handleLayoutChange = useCallback((layout: string) => {
+    setActiveLayout(layout);
   }, []);
 
   return (
@@ -84,7 +105,7 @@ const Index = () => {
         <ResizableHandle withHandle />
         
         <ResizablePanel defaultSize={30} minSize={15}>
-          <SQLPanel diagramState={diagramState} />
+          <SQLPanel diagramState={diagramState} dialect={sqlDialect} />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

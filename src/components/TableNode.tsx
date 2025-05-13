@@ -20,8 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TableData, ColumnType, Column, Constraint } from "@/types";
-import { Key, Database, Table, Check, Fingerprint } from "lucide-react";
+import { Key, Database, Table as TableIcon, Check, Fingerprint, File, MessageSquare } from "lucide-react";
 
 interface TableNodeProps {
   id: string;
@@ -43,10 +44,15 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
   const [defaultValue, setDefaultValue] = useState("");
   const [hasCheckConstraint, setHasCheckConstraint] = useState(false);
   const [checkExpression, setCheckExpression] = useState("");
+  const [comment, setComment] = useState("");
+  const [enumValues, setEnumValues] = useState("");
+  const [schema, setSchema] = useState("public");
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
 
   const handleSaveTableName = () => {
     data.tableName = tableName;
+    data.schema = schema; // Save schema if changed
+    data.comment = comment || undefined; // Save comment if provided
     setIsEditing(false);
   };
 
@@ -78,7 +84,9 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
       isForeignKey: false,
       isNullable,
       isUnique,
-      constraints: constraints.length > 0 ? constraints : undefined
+      constraints: constraints.length > 0 ? constraints : undefined,
+      comment: comment || undefined,
+      enumValues: newColumnType === "ENUM" ? enumValues.split(',').map(v => v.trim()) : undefined
     };
 
     if (editingColumnId) {
@@ -107,6 +115,8 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
     setDefaultValue("");
     setHasCheckConstraint(false);
     setCheckExpression("");
+    setComment("");
+    setEnumValues("");
     setEditingColumnId(null);
   };
 
@@ -117,6 +127,8 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
     setIsPrimaryKey(column.isPrimaryKey);
     setIsNullable(column.isNullable);
     setIsUnique(column.isUnique || false);
+    setComment(column.comment || "");
+    setEnumValues(column.enumValues?.join(", ") || "");
     
     const defaultConstraint = column.constraints?.find(c => c.type === 'DEFAULT');
     setHasDefaultValue(!!defaultConstraint);
@@ -153,12 +165,34 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
       
       <div className="table-node__header">
         {isEditing ? (
-          <div className="flex items-center space-x-2">
-            <Input 
-              value={tableName} 
-              onChange={(e) => setTableName(e.target.value)}
-              className="text-mono-900 h-7 py-1 px-2 text-sm"
-            />
+          <div className="flex flex-col space-y-2 p-2">
+            <div className="flex items-center space-x-2">
+              <Input 
+                value={tableName} 
+                onChange={(e) => setTableName(e.target.value)}
+                className="text-mono-900 h-7 py-1 px-2 text-sm"
+                placeholder="Table Name"
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Input 
+                value={schema} 
+                onChange={(e) => setSchema(e.target.value)}
+                className="text-mono-900 h-7 py-1 px-2 text-sm"
+                placeholder="Schema (e.g. public)"
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Input 
+                value={comment || ""} 
+                onChange={(e) => setComment(e.target.value)}
+                className="text-mono-900 h-7 py-1 px-2 text-sm"
+                placeholder="Comment (optional)"
+              />
+            </div>
+            
             <Button 
               onClick={handleSaveTableName} 
               size="sm" 
@@ -170,9 +204,14 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-mono-300" />
-              <span>{data.tableName}</span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-mono-300" />
+                <span>{data.tableName}</span>
+              </div>
+              {data.schema && data.schema !== "public" && (
+                <span className="text-xs text-mono-400 ml-6">{data.schema}</span>
+              )}
             </div>
             <Button 
               onClick={() => setIsEditing(true)} 
@@ -192,12 +231,14 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
             <div className="flex items-center">
               {column.isPrimaryKey && <span className="table-node__row-pk" title="Primary Key"><Key className="h-3.5 w-3.5" /></span>}
               {column.isForeignKey && <span className="table-node__row-fk" title="Foreign Key"><Fingerprint className="h-3.5 w-3.5" /></span>}
-              {column.isUnique && <span className="table-node__row-unique" title="Unique Constraint"><Table className="h-3.5 w-3.5" /></span>}
+              {column.isUnique && <span className="table-node__row-unique" title="Unique Constraint"><TableIcon className="h-3.5 w-3.5" /></span>}
               {column.constraints?.some(c => c.type === 'CHECK') && <span className="table-node__row-check" title="Check Constraint"><Check className="h-3.5 w-3.5" /></span>}
+              {column.comment && <span className="table-node__row-comment" title={column.comment}><MessageSquare className="h-3.5 w-3.5" /></span>}
             </div>
             <span className="table-node__row-name">{column.name}</span>
             <span className="table-node__row-type">
               {column.type}{column.length ? `(${column.length})` : ''}
+              {column.enumValues ? `(${column.enumValues.join(', ')})` : ''}
               {!column.isNullable && ' !'}
             </span>
             <div className="flex space-x-1">
@@ -237,127 +278,164 @@ const TableNode = ({ id, data, isConnectable }: TableNodeProps) => {
           <DialogHeader>
             <DialogTitle>{editingColumnId ? "Edit Column" : "Add New Column"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="columnName">Column Name</Label>
-              <Input 
-                id="columnName" 
-                value={newColumnName} 
-                onChange={(e) => setNewColumnName(e.target.value)} 
-                placeholder="e.g. id, name, email" 
-              />
-            </div>
+          
+          <Tabs defaultValue="basic">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="basic">Basic</TabsTrigger>
+              <TabsTrigger value="advanced">Advanced</TabsTrigger>
+            </TabsList>
             
-            <div className="space-y-2">
-              <Label htmlFor="columnType">Data Type</Label>
-              <Select 
-                value={newColumnType} 
-                onValueChange={(value) => setNewColumnType(value as ColumnType)}
-              >
-                <SelectTrigger id="columnType">
-                  <SelectValue placeholder="Select data type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="INT">INT</SelectItem>
-                  <SelectItem value="VARCHAR">VARCHAR</SelectItem>
-                  <SelectItem value="TEXT">TEXT</SelectItem>
-                  <SelectItem value="BOOLEAN">BOOLEAN</SelectItem>
-                  <SelectItem value="DATE">DATE</SelectItem>
-                  <SelectItem value="TIMESTAMP">TIMESTAMP</SelectItem>
-                  <SelectItem value="FLOAT">FLOAT</SelectItem>
-                  <SelectItem value="DOUBLE">DOUBLE</SelectItem>
-                  <SelectItem value="DECIMAL">DECIMAL</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {newColumnType === "VARCHAR" && (
+            <TabsContent value="basic" className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="columnLength">Length</Label>
+                <Label htmlFor="columnName">Column Name</Label>
                 <Input 
-                  id="columnLength" 
-                  type="number" 
-                  value={newColumnLength} 
-                  onChange={(e) => setNewColumnLength(Number(e.target.value))} 
+                  id="columnName" 
+                  value={newColumnName} 
+                  onChange={(e) => setNewColumnName(e.target.value)} 
+                  placeholder="e.g. id, name, email" 
                 />
-              </div>
-            )}
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="isPrimaryKey" 
-                  checked={isPrimaryKey}
-                  onCheckedChange={(checked) => {
-                    setIsPrimaryKey(checked as boolean);
-                    if (checked) {
-                      setIsNullable(false);
-                      setIsUnique(true);
-                    }
-                  }}
-                />
-                <Label htmlFor="isPrimaryKey">Primary Key</Label>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="isNullable" 
-                  checked={isNullable}
-                  disabled={isPrimaryKey}
-                  onCheckedChange={(checked) => setIsNullable(checked as boolean)} 
-                />
-                <Label htmlFor="isNullable">Nullable</Label>
+              <div className="space-y-2">
+                <Label htmlFor="columnType">Data Type</Label>
+                <Select 
+                  value={newColumnType} 
+                  onValueChange={(value) => setNewColumnType(value as ColumnType)}
+                >
+                  <SelectTrigger id="columnType">
+                    <SelectValue placeholder="Select data type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INT">INT</SelectItem>
+                    <SelectItem value="VARCHAR">VARCHAR</SelectItem>
+                    <SelectItem value="TEXT">TEXT</SelectItem>
+                    <SelectItem value="BOOLEAN">BOOLEAN</SelectItem>
+                    <SelectItem value="DATE">DATE</SelectItem>
+                    <SelectItem value="TIMESTAMP">TIMESTAMP</SelectItem>
+                    <SelectItem value="FLOAT">FLOAT</SelectItem>
+                    <SelectItem value="DOUBLE">DOUBLE</SelectItem>
+                    <SelectItem value="DECIMAL">DECIMAL</SelectItem>
+                    <SelectItem value="JSON">JSON</SelectItem>
+                    <SelectItem value="UUID">UUID</SelectItem>
+                    <SelectItem value="ENUM">ENUM</SelectItem>
+                    <SelectItem value="ARRAY">ARRAY</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="isUnique" 
-                  checked={isUnique || isPrimaryKey}
-                  disabled={isPrimaryKey}
-                  onCheckedChange={(checked) => setIsUnique(checked as boolean)} 
-                />
-                <Label htmlFor="isUnique">Unique</Label>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="hasDefault" 
-                  checked={hasDefaultValue}
-                  onCheckedChange={(checked) => setHasDefaultValue(checked as boolean)}
-                />
-                <Label htmlFor="hasDefault">Default Value</Label>
-              </div>
-              
-              {hasDefaultValue && (
-                <Input 
-                  placeholder="Enter default value" 
-                  value={defaultValue}
-                  onChange={(e) => setDefaultValue(e.target.value)}
-                />
+              {newColumnType === "VARCHAR" && (
+                <div className="space-y-2">
+                  <Label htmlFor="columnLength">Length</Label>
+                  <Input 
+                    id="columnLength" 
+                    type="number" 
+                    value={newColumnLength} 
+                    onChange={(e) => setNewColumnLength(Number(e.target.value))} 
+                  />
+                </div>
               )}
-            </div>
+              
+              {newColumnType === "ENUM" && (
+                <div className="space-y-2">
+                  <Label htmlFor="enumValues">Enum Values (comma separated)</Label>
+                  <Input 
+                    id="enumValues" 
+                    value={enumValues} 
+                    onChange={(e) => setEnumValues(e.target.value)} 
+                    placeholder="e.g. SMALL, MEDIUM, LARGE" 
+                  />
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="isPrimaryKey" 
+                    checked={isPrimaryKey}
+                    onCheckedChange={(checked) => {
+                      setIsPrimaryKey(checked as boolean);
+                      if (checked) {
+                        setIsNullable(false);
+                        setIsUnique(true);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="isPrimaryKey">Primary Key</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="isNullable" 
+                    checked={isNullable}
+                    disabled={isPrimaryKey}
+                    onCheckedChange={(checked) => setIsNullable(checked as boolean)} 
+                  />
+                  <Label htmlFor="isNullable">Nullable</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="isUnique" 
+                    checked={isUnique || isPrimaryKey}
+                    disabled={isPrimaryKey}
+                    onCheckedChange={(checked) => setIsUnique(checked as boolean)} 
+                  />
+                  <Label htmlFor="isUnique">Unique</Label>
+                </div>
+              </div>
+            </TabsContent>
             
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="hasCheck" 
-                  checked={hasCheckConstraint}
-                  onCheckedChange={(checked) => setHasCheckConstraint(checked as boolean)}
-                />
-                <Label htmlFor="hasCheck">Check Constraint</Label>
+            <TabsContent value="advanced" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="hasDefault" 
+                    checked={hasDefaultValue}
+                    onCheckedChange={(checked) => setHasDefaultValue(checked as boolean)}
+                  />
+                  <Label htmlFor="hasDefault">Default Value</Label>
+                </div>
+                
+                {hasDefaultValue && (
+                  <Input 
+                    placeholder="Enter default value" 
+                    value={defaultValue}
+                    onChange={(e) => setDefaultValue(e.target.value)}
+                  />
+                )}
               </div>
               
-              {hasCheckConstraint && (
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="hasCheck" 
+                    checked={hasCheckConstraint}
+                    onCheckedChange={(checked) => setHasCheckConstraint(checked as boolean)}
+                  />
+                  <Label htmlFor="hasCheck">Check Constraint</Label>
+                </div>
+                
+                {hasCheckConstraint && (
+                  <Input 
+                    placeholder="e.g. price > 0" 
+                    value={checkExpression}
+                    onChange={(e) => setCheckExpression(e.target.value)}
+                  />
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="columnComment">Column Comment</Label>
                 <Input 
-                  placeholder="e.g. price > 0" 
-                  value={checkExpression}
-                  onChange={(e) => setCheckExpression(e.target.value)}
+                  id="columnComment" 
+                  value={comment} 
+                  onChange={(e) => setComment(e.target.value)} 
+                  placeholder="Documentation for this column" 
                 />
-              )}
-            </div>
-          </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+          
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>

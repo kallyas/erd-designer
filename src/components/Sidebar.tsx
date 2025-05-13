@@ -1,13 +1,15 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Database, Table, Upload, Download } from "lucide-react";
+import { Database, Table, Upload, Download, LayoutDashboard, GitBranch, FileType } from "lucide-react";
 import { toast } from "sonner";
 import { DiagramState } from "@/types";
 import SQLImporter from "./SQLImporter";
+import AdvancedFeaturesPanel from "./AdvancedFeaturesPanel";
 
 interface SidebarProps {
   addNewTable: () => void;
@@ -28,6 +30,7 @@ const Sidebar = ({
   const [diagramDescription, setDiagramDescription] = useState("");
   const [savedDiagrams, setSavedDiagrams] = useState<{id: string, name: string, date: string, data: DiagramState}[]>([]);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
 
   // Save current diagram
   const handleSave = () => {
@@ -132,6 +135,18 @@ const Sidebar = ({
     onLoadDiagram(importedDiagram);
   };
 
+  // Handle layout change
+  const handleLayoutChange = (layout: string) => {
+    // This would be handled by the parent component
+    console.log("Layout changed to:", layout);
+  };
+
+  // Handle dialect change
+  const handleDialectChange = (dialect: string) => {
+    // This would be handled by the parent component
+    console.log("SQL dialect changed to:", dialect);
+  };
+
   return (
     <div className="w-64 border-r bg-white flex flex-col h-full">
       <div className="p-4 border-b">
@@ -141,17 +156,24 @@ const Sidebar = ({
         </h2>
       </div>
 
-      <Tabs defaultValue="tools" className="flex-1">
-        <TabsList className="w-full grid grid-cols-2 m-0 rounded-none border-b">
+      <Tabs defaultValue="tools" className="flex-1 flex flex-col">
+        <TabsList className="w-full grid grid-cols-3 m-0 rounded-none border-b">
           <TabsTrigger value="tools" className="rounded-none data-[state=active]:bg-white">
             Tools
           </TabsTrigger>
           <TabsTrigger value="save" className="rounded-none data-[state=active]:bg-white">
             Save/Load
           </TabsTrigger>
+          <TabsTrigger 
+            value="advanced" 
+            className="rounded-none data-[state=active]:bg-white"
+            onClick={() => setShowAdvancedFeatures(true)}
+          >
+            Advanced
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tools" className="p-4 m-0">
+        <TabsContent value="tools" className="p-4 m-0 overflow-auto">
           <div className="space-y-4">
             <Button 
               onClick={addNewTable}
@@ -199,6 +221,7 @@ const Sidebar = ({
               <li>• Drag connections between tables to create relationships</li>
               <li>• View the generated SQL code in the panel below</li>
               <li>• Import existing SQL schema or export your design</li>
+              <li>• Use advanced features for layouts and versioning</li>
             </ul>
           </div>
         </TabsContent>
@@ -285,6 +308,16 @@ const Sidebar = ({
               </div>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="m-0 p-0 flex flex-col h-full overflow-auto">
+          {showAdvancedFeatures && (
+            <AdvancedFeaturesPanel 
+              diagramState={currentDiagram}
+              onLayoutChange={handleLayoutChange}
+              onDialectChange={handleDialectChange}
+            />
+          )}
         </TabsContent>
       </Tabs>
       

@@ -1,62 +1,138 @@
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DiagramState } from "@/types";
 import { generateSQL, formatSQLForDisplay } from "@/utils/sqlGenerator";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Download, Copy, FileType, Database } from "lucide-react";
 import { toast } from "sonner";
 
 interface SQLPanelProps {
   diagramState: DiagramState;
+  dialect?: string;
 }
 
-const SQLPanel = ({ diagramState }: SQLPanelProps) => {
-  const [sql, setSql] = useState("");
-  const [formattedSql, setFormattedSql] = useState("");
+const SQLPanel = ({ diagramState, dialect = "mysql" }: SQLPanelProps) => {
+  const [activeTab, setActiveTab] = useState("sql");
+  const [jsonVisible, setJsonVisible] = useState(false);
   
-  useEffect(() => {
-    const generatedSQL = generateSQL(diagramState);
-    setSql(generatedSQL);
-    setFormattedSql(formatSQLForDisplay(generatedSQL));
-  }, [diagramState]);
+  const sql = useMemo(() => {
+    return generateSQL(diagramState, dialect);
+  }, [diagramState, dialect]);
+  
+  const formattedSql = useMemo(() => {
+    return formatSQLForDisplay(sql);
+  }, [sql]);
 
-  const handleCopySQL = () => {
+  const handleCopy = () => {
     navigator.clipboard.writeText(sql);
-    toast.success("SQL copied to clipboard");
+    toast.success("SQL code copied to clipboard");
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([sql], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "erd_schema.sql";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("SQL file downloaded");
+  };
+  
+  const handleJsonDownload = () => {
+    const jsonData = JSON.stringify(diagramState, null, 2);
+    const blob = new Blob([jsonData], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "erd_diagram.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Diagram JSON downloaded");
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 flex justify-between items-center border-b">
-        <h2 className="text-lg font-semibold text-erd-dark">SQL Code</h2>
-        <Button onClick={handleCopySQL} className="bg-erd-primary">
-          Copy SQL
-        </Button>
-      </div>
-
-      <Tabs defaultValue="formatted" className="flex-1 flex flex-col">
-        <div className="px-4 pt-2">
-          <TabsList className="w-full">
-            <TabsTrigger value="formatted" className="flex-1">Formatted</TabsTrigger>
-            <TabsTrigger value="raw" className="flex-1">Raw</TabsTrigger>
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between border-b p-2 bg-background">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList>
+            <TabsTrigger value="sql" className="flex items-center gap-1">
+              <Database className="h-4 w-4" />
+              SQL Output
+            </TabsTrigger>
+            <TabsTrigger 
+              value="json" 
+              className="flex items-center gap-1"
+              onClick={() => setJsonVisible(true)}
+            >
+              <FileType className="h-4 w-4" />
+              JSON
+            </TabsTrigger>
           </TabsList>
-        </div>
+        </Tabs>
         
-        <TabsContent value="formatted" className="flex-1 overflow-auto p-0 m-0">
-          <div className="sql-panel bg-erd-dark p-4">
-            <div 
-              className="sql-panel__content"
-              dangerouslySetInnerHTML={{ __html: formattedSql }}
-            />
+        <div className="flex items-center gap-2">
+          {activeTab === "sql" && (
+            <>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-8 px-2" 
+                onClick={handleCopy}
+                title="Copy SQL"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-8 px-2" 
+                onClick={handleDownload}
+                title="Download SQL"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          
+          {activeTab === "json" && (
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-8 px-2" 
+              onClick={handleJsonDownload}
+              title="Download JSON"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-auto">
+        <TabsContent value="sql" className="m-0 h-full">
+          <div className="sql-panel">
+            <div className="sql-panel__content sql-code">
+              <div dangerouslySetInnerHTML={{ __html: formattedSql }} />
+            </div>
           </div>
         </TabsContent>
         
-        <TabsContent value="raw" className="flex-1 overflow-auto p-0 m-0">
-          <pre className="sql-panel bg-erd-dark p-4">
-            <code className="sql-panel__content">{sql}</code>
-          </pre>
+        <TabsContent value="json" className="m-0 h-full">
+          {jsonVisible && (
+            <div className="sql-panel">
+              <div className="sql-panel__content">
+                <pre>{JSON.stringify(diagramState, null, 2)}</pre>
+              </div>
+            </div>
+          )}
         </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 };
