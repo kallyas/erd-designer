@@ -594,7 +594,34 @@ const TableNode = ({ id, data, isConnectable, selected }: TableNodeProps) => {
           </div>
         )}
       </div>
-
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        className="w-2 h-2 bg-primary border-2 border-white dark:border-gray-800"
+        isConnectable={true}
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        className="w-2 h-2 bg-primary border-2 border-white dark:border-gray-800"
+        isConnectable={true}
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        className="w-2 h-2 bg-primary border-2 border-white dark:border-gray-800"
+        isConnectable={true}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        className="w-2 h-2 bg-primary border-2 border-white dark:border-gray-800"
+        isConnectable={true}
+      />
       <button
         className="table-node__add-column"
         onClick={() => {
