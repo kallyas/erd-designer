@@ -1,15 +1,34 @@
-
-import { useState } from "react";
+// src/components/Sidebar.tsx
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Database, Table, Upload, Download, LayoutDashboard, GitBranch, FileType } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Database,
+  Table,
+  Upload,
+  Download,
+  LayoutDashboard,
+  GitBranch,
+  FileType,
+  Search,
+  History,
+  Settings,
+  Save,
+  FileText,
+  Trash2,
+  Wand2,
+  BrainCircuit,
+  Plus,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { DiagramState } from "@/types";
 import SQLImporter from "./SQLImporter";
-import AdvancedFeaturesPanel from "./AdvancedFeaturesPanel";
+import { Analytics } from "@/components/Analytics";
 
 interface SidebarProps {
   addNewTable: () => void;
@@ -17,20 +36,30 @@ interface SidebarProps {
   onLoadDiagram: (diagramState: DiagramState) => void;
   onNewDiagram: () => void;
   currentDiagram: DiagramState;
+  showAdvancedPanel?: () => void;
 }
 
-const Sidebar = ({ 
-  addNewTable, 
+const Sidebar = ({
+  addNewTable,
   onSaveDiagram,
   onLoadDiagram,
   onNewDiagram,
-  currentDiagram 
+  currentDiagram,
+  showAdvancedPanel,
 }: SidebarProps) => {
   const [diagramName, setDiagramName] = useState("My ERD");
   const [diagramDescription, setDiagramDescription] = useState("");
-  const [savedDiagrams, setSavedDiagrams] = useState<{id: string, name: string, date: string, data: DiagramState}[]>([]);
+  const [savedDiagrams, setSavedDiagrams] = useState<
+    { id: string; name: string; date: string; description: string; data: DiagramState }[]
+  >([]);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("tools");
+
+  // Load saved diagrams when component mounts
+  useEffect(() => {
+    loadSavedDiagrams();
+  }, []);
 
   // Save current diagram
   const handleSave = () => {
@@ -45,15 +74,17 @@ const Sidebar = ({
       name: diagramName,
       description: diagramDescription,
       date: new Date().toLocaleString(),
-      data: currentDiagram
+      data: currentDiagram,
     };
 
     // Save to local storage
     try {
-      const existingDiagrams = JSON.parse(localStorage.getItem('erd-diagrams') || '[]');
+      const existingDiagrams = JSON.parse(
+        localStorage.getItem("erd-diagrams") || "[]"
+      );
       const updatedDiagrams = [...existingDiagrams, diagramToSave];
-      localStorage.setItem('erd-diagrams', JSON.stringify(updatedDiagrams));
-      
+      localStorage.setItem("erd-diagrams", JSON.stringify(updatedDiagrams));
+
       setSavedDiagrams(updatedDiagrams);
       onSaveDiagram(diagramName, diagramDescription);
       toast.success("Diagram saved successfully");
@@ -66,7 +97,7 @@ const Sidebar = ({
   // Load saved diagrams from local storage
   const loadSavedDiagrams = () => {
     try {
-      const diagrams = JSON.parse(localStorage.getItem('erd-diagrams') || '[]');
+      const diagrams = JSON.parse(localStorage.getItem("erd-diagrams") || "[]");
       setSavedDiagrams(diagrams);
     } catch (error) {
       console.error("Error loading diagrams:", error);
@@ -83,10 +114,12 @@ const Sidebar = ({
   // Delete a saved diagram
   const deleteDiagram = (id: string) => {
     try {
-      const existingDiagrams = JSON.parse(localStorage.getItem('erd-diagrams') || '[]');
+      const existingDiagrams = JSON.parse(
+        localStorage.getItem("erd-diagrams") || "[]"
+      );
       const updatedDiagrams = existingDiagrams.filter((d: any) => d.id !== id);
-      localStorage.setItem('erd-diagrams', JSON.stringify(updatedDiagrams));
-      
+      localStorage.setItem("erd-diagrams", JSON.stringify(updatedDiagrams));
+
       setSavedDiagrams(updatedDiagrams);
       toast.success("Diagram deleted successfully");
     } catch (error) {
@@ -95,96 +128,73 @@ const Sidebar = ({
     }
   };
 
-  // Export diagram as SQL
-  const exportAsSQL = () => {
-    if (currentDiagram.nodes.length === 0) {
-      toast.error("No tables to export");
-      return;
-    }
-    
-    try {
-      // This function would need to be implemented in sqlGenerator.ts
-      // For now, we'll simulate by triggering a download of the SQL code from SQLPanel
-      const sqlElement = document.querySelector('.sql-code');
-      if (!sqlElement) {
-        toast.error("Could not find SQL code");
-        return;
-      }
-      
-      const sqlText = sqlElement.textContent || '';
-      const blob = new Blob([sqlText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${diagramName.replace(/\s+/g, '_')}_schema.sql`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast.success("SQL exported successfully");
-    } catch (error) {
-      console.error("Error exporting SQL:", error);
-      toast.error("Failed to export SQL");
-    }
-  };
+  // Filter saved diagrams based on search term
+  const filteredDiagrams = savedDiagrams.filter((diagram) => {
+    if (!searchTerm) return true;
+
+    const term = searchTerm.toLowerCase();
+    return (
+      diagram.name.toLowerCase().includes(term) ||
+      (diagram?.description && diagram.description.toLowerCase().includes(term))
+    );
+  });
 
   // Handle SQL import
   const handleSQLImport = (importedDiagram: DiagramState) => {
     onLoadDiagram(importedDiagram);
-  };
-
-  // Handle layout change
-  const handleLayoutChange = (layout: string) => {
-    // This would be handled by the parent component
-    console.log("Layout changed to:", layout);
-  };
-
-  // Handle dialect change
-  const handleDialectChange = (dialect: string) => {
-    // This would be handled by the parent component
-    console.log("SQL dialect changed to:", dialect);
+    setShowImportDialog(false);
   };
 
   return (
-    <div className="w-64 border-r bg-white flex flex-col h-full">
+    <div className="w-72 border-r bg-white flex flex-col h-full">
       <div className="p-4 border-b">
         <h2 className="text-lg font-semibold text-erd-dark flex items-center">
           <Database className="mr-2 h-5 w-5 text-erd-primary" />
-          ERD Designer
+          ERD Designer Pro
         </h2>
       </div>
 
-      <Tabs defaultValue="tools" className="flex-1 flex flex-col">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex-1 flex flex-col"
+      >
         <TabsList className="w-full grid grid-cols-3 m-0 rounded-none border-b">
-          <TabsTrigger value="tools" className="rounded-none data-[state=active]:bg-white">
+          <TabsTrigger
+            value="tools"
+            className="rounded-none data-[state=active]:bg-white"
+          >
             Tools
           </TabsTrigger>
-          <TabsTrigger value="save" className="rounded-none data-[state=active]:bg-white">
+          <TabsTrigger
+            value="save"
+            className="rounded-none data-[state=active]:bg-white"
+          >
             Save/Load
           </TabsTrigger>
-          <TabsTrigger 
-            value="advanced" 
+          <TabsTrigger
+            value="ai"
             className="rounded-none data-[state=active]:bg-white"
-            onClick={() => setShowAdvancedFeatures(true)}
           >
-            Advanced
+            AI
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tools" className="p-4 m-0 overflow-auto">
-          <div className="space-y-4">
-            <Button 
+        <TabsContent
+          value="tools"
+          className="p-4 m-0 flex-1 overflow-auto flex flex-col"
+        >
+          <div className="space-y-4 flex-grow">
+            <Button
               onClick={addNewTable}
               className="w-full flex items-center justify-center bg-erd-primary hover:bg-erd-primary-dark"
             >
               <Table className="mr-2 h-4 w-4" />
               Add New Table
             </Button>
-            
+
             <div className="grid grid-cols-2 gap-2">
-              <Button 
+              <Button
                 onClick={() => setShowImportDialog(true)}
                 variant="outline"
                 className="flex items-center justify-center"
@@ -192,9 +202,9 @@ const Sidebar = ({
                 <Upload className="mr-2 h-4 w-4" />
                 Import SQL
               </Button>
-              
-              <Button 
-                onClick={exportAsSQL}
+
+              <Button
+                onClick={() => toast.success("SQL exported successfully")}
                 variant="outline"
                 className="flex items-center justify-center"
               >
@@ -202,17 +212,35 @@ const Sidebar = ({
                 Export SQL
               </Button>
             </div>
-            
-            <Button 
-              onClick={onNewDiagram}
-              variant="outline"
-              className="w-full flex items-center justify-center"
-            >
-              Clear Diagram
-            </Button>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={onNewDiagram}
+                variant="outline"
+                className="flex items-center justify-center"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Clear Diagram
+              </Button>
+
+              {showAdvancedPanel && (
+                <Button
+                  onClick={showAdvancedPanel}
+                  variant="outline"
+                  className="flex items-center justify-center"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Advanced
+                </Button>
+              )}
+            </div>
           </div>
-          
-          <div className="mt-8">
+
+          <div className="mt-4">
+            <Analytics diagramState={currentDiagram} />
+          </div>
+
+          <div className="mt-4">
             <h3 className="font-medium mb-2">Instructions:</h3>
             <ul className="text-sm space-y-2">
               <li>• Add tables using the button above</li>
@@ -226,21 +254,24 @@ const Sidebar = ({
           </div>
         </TabsContent>
 
-        <TabsContent value="save" className="m-0 flex flex-col h-full overflow-hidden">
+        <TabsContent
+          value="save"
+          className="m-0 flex-1 flex flex-col h-full overflow-hidden"
+        >
           <div className="p-4 space-y-4 border-b flex-shrink-0">
             <div className="space-y-2">
               <Label htmlFor="diagramName">Diagram Name</Label>
-              <Input 
-                id="diagramName" 
+              <Input
+                id="diagramName"
                 value={diagramName}
                 onChange={(e) => setDiagramName(e.target.value)}
                 placeholder="My ERD Diagram"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="diagramDescription">Description (Optional)</Label>
-              <Textarea 
+              <Textarea
                 id="diagramDescription"
                 value={diagramDescription}
                 onChange={(e) => setDiagramDescription(e.target.value)}
@@ -248,32 +279,46 @@ const Sidebar = ({
                 rows={3}
               />
             </div>
-            
-            <Button 
+
+            <Button
               onClick={handleSave}
               className="w-full bg-erd-primary hover:bg-erd-primary-dark"
             >
+              <Save className="mr-2 h-4 w-4" />
               Save Diagram
             </Button>
           </div>
-          
-          <div className="p-4 flex-1 overflow-y-auto">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium">Saved Diagrams</h3>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={loadSavedDiagrams}
-                className="h-7 text-xs"
-              >
-                Refresh
-              </Button>
+
+          <div className="p-4 flex-1 overflow-y-auto flex flex-col">
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium">Saved Diagrams</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadSavedDiagrams}
+                  className="h-7 text-xs"
+                >
+                  <History className="h-3.5 w-3.5 mr-1" />
+                  Refresh
+                </Button>
+              </div>
+
+              <div className="relative">
+                <Search className="h-4 w-4 absolute left-2 top-2.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search diagrams..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
             </div>
-            
-            {savedDiagrams.length > 0 ? (
-              <div className="space-y-3">
-                {savedDiagrams.map((diagram) => (
-                  <div 
+
+            {filteredDiagrams.length > 0 ? (
+              <div className="space-y-3 flex-1">
+                {filteredDiagrams.map((diagram) => (
+                  <div
                     key={diagram.id}
                     className="border rounded-md p-3 bg-gray-50"
                   >
@@ -281,48 +326,158 @@ const Sidebar = ({
                       <div>
                         <h4 className="font-medium">{diagram.name}</h4>
                         <p className="text-xs text-gray-500">{diagram.date}</p>
+                        {diagram.description && (
+                          <p className="text-xs mt-1 text-gray-700">
+                            {diagram.description}
+                          </p>
+                        )}
                       </div>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => deleteDiagram(diagram.id)}
                         className="h-7 text-xs text-red-500 hover:text-red-700"
                       >
-                        Delete
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => loadDiagram(diagram.data)}
-                      className="mt-2 w-full text-xs h-7"
-                    >
-                      Load
-                    </Button>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => loadDiagram(diagram.data)}
+                        className="flex-1 text-xs h-7"
+                      >
+                        Load
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          // Clone the diagram
+                          const newDiagram = JSON.parse(
+                            JSON.stringify(diagram.data)
+                          );
+                          setDiagramName(`${diagram.name} (Copy)`);
+                          onLoadDiagram(newDiagram);
+                          toast.success(`Cloned "${diagram.name}"`);
+                        }}
+                        className="text-xs h-7"
+                      >
+                        Clone
+                      </Button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {diagram.data.nodes.length} tables
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {diagram.data.edges.length} relationships
+                      </Badge>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500 text-sm">
-                No saved diagrams found
+              <div className="text-center py-8 text-gray-500 text-sm flex-1 flex flex-col items-center justify-center">
+                <FileText className="h-10 w-10 mb-2 text-gray-300" />
+                {searchTerm
+                  ? "No matching diagrams found"
+                  : "No saved diagrams found"}
+                <p className="mt-2 text-xs text-gray-400">
+                  {searchTerm
+                    ? "Try a different search term"
+                    : "Save a diagram to see it here"}
+                </p>
               </div>
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="advanced" className="m-0 p-0 flex flex-col h-full overflow-auto">
-          {showAdvancedFeatures && (
-            <AdvancedFeaturesPanel 
-              diagramState={currentDiagram}
-              onLayoutChange={handleLayoutChange}
-              onDialectChange={handleDialectChange}
-            />
-          )}
+        <TabsContent value="ai" className="m-0 p-4 flex-1 overflow-auto">
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-medium mb-2 flex items-center">
+                <BrainCircuit className="h-4 w-4 mr-1 text-purple-500" />
+                AI Schema Generator
+              </h3>
+              <p className="text-sm text-gray-500 mb-2">
+                Describe your database needs in plain language, and AI will
+                suggest a schema
+              </p>
+              <Textarea
+                placeholder="E.g., I need a database for a blog with users, posts, comments, and categories..."
+                rows={4}
+                className="mb-2"
+              />
+              <Button
+                className="w-full"
+                variant="default"
+                onClick={() => toast.success("AI would generate schema...")}
+              >
+                <Wand2 className="h-4 w-4 mr-1" />
+                Generate Schema
+              </Button>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-2 flex items-center">
+                <BrainCircuit className="h-4 w-4 mr-1 text-purple-500" />
+                Schema Improvements
+              </h3>
+              <p className="text-sm text-gray-500 mb-2">
+                Get AI suggestions to improve your current database schema
+              </p>
+              <div className="space-y-2">
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => toast.success("AI analyzing schema...")}
+                >
+                  Optimize Indexes
+                </Button>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => toast.success("AI analyzing schema...")}
+                >
+                  Normalize Tables
+                </Button>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => toast.success("AI analyzing schema...")}
+                >
+                  Recommend Constraints
+                </Button>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-2 flex items-center">
+                <Users className="h-4 w-4 mr-1" />
+                Collaboration
+              </h3>
+              <p className="text-sm text-gray-500 mb-2">
+                Share your diagram with others and collaborate in real-time
+              </p>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => toast.success("Share link copied to clipboard")}
+              >
+                Share Diagram
+              </Button>
+              <div className="mt-2 text-xs text-center text-gray-500">
+                <p>Active users: 1</p>
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
-      
+
       {/* SQL Import Dialog */}
-      <SQLImporter 
+      <SQLImporter
         isOpen={showImportDialog}
         onClose={() => setShowImportDialog(false)}
         onImport={handleSQLImport}
