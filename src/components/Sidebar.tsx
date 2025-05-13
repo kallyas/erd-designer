@@ -11,9 +11,6 @@ import {
   Table,
   Upload,
   Download,
-  LayoutDashboard,
-  GitBranch,
-  FileType,
   Search,
   History,
   Settings,
@@ -22,7 +19,6 @@ import {
   Trash2,
   Wand2,
   BrainCircuit,
-  Plus,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
