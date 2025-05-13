@@ -5,71 +5,70 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 16% 98%; /* soft light gray */
+    --foreground: 222.2 47.4% 11.2%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222.2 47.4% 11.2%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222.2 47.4% 11.2%;
 
-    /* Enhanced primary color - blue */
-    --primary: 210 100% 50%;
+    /* Primary: blue, more vibrant */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary color - soft gray */
-    --secondary: 220 14% 96%;
+    /* Secondary: soft blue-gray */
+    --secondary: 220 14% 94%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 210 16% 92%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Accent color - light blue */
-    --accent: 200 98% 39%;
+    /* Accent: teal */
+    --accent: 174 62% 47%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 210 100% 50%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     /* Sidebar and ERD specific colors */
-    --sidebar-background: 220 20% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 210 100% 50%;
+    --sidebar-background: 220 16% 94%;
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 20% 95%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent: 174 62% 97%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 210 100% 50%;
+    --sidebar-ring: 217 91% 60%;
     
     /* ERD specific colors */
-    --erd-table-header: 210 100% 50%;
-    --erd-table-border: 210 20% 92%;
-    --erd-table-hover: 210 20% 98%;
-    --erd-row-hover: 210 20% 96%;
-    --erd-pk-color: 328 73% 44%;
-    --erd-fk-color: 210 100% 50%;
-    --erd-unique-color: 158 64% 38%;
+    --erd-table-header: 217 91% 60%;
+    --erd-table-border: 220 13% 91%;
+    --erd-table-hover: 217 91% 97%;
+    --erd-row-hover: 217 91% 95%;
+    --erd-pk-color: 340 82% 52%;   /* magenta for PK */
+    --erd-fk-color: 27 98% 54%;    /* orange for FK */
+    --erd-unique-color: 174 62% 47%; /* teal for unique */
   }
 
   .dark {
-    --background: 222.2 47.4% 11.2%;
+    --background: 222.2 47.4% 10.2%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 47.4% 11.2%;
+    --card: 222.2 47.4% 13.2%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 47.4% 11.2%;
+    --popover: 222.2 47.4% 13.2%;
     --popover-foreground: 210 40% 98%;
 
-    /* Enhanced primary color for dark mode - bright blue */
-    --primary: 210 100% 60%;  
+    --primary: 217 91% 66%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -78,35 +77,33 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    /* Accent color for dark mode - bright blue */
-    --accent: 210 100% 60%;
+    --accent: 174 62% 47%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 217.2 32.6% 20%;
+    --input: 217.2 32.6% 20%;
+    --ring: 217 91% 66%;
     
-    /* Sidebar colors for dark mode */
-    --sidebar-background: 220 40% 13%;
+    --sidebar-background: 222.2 47.4% 13.2%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 100% 60%;
+    --sidebar-primary: 217 91% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217.2 32.6% 20%;
+    --sidebar-accent: 174 62% 20%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 20%;
-    --sidebar-ring: 224.3 76.3% 60%;
+    --sidebar-ring: 217 91% 66%;
     
     /* ERD specific colors for dark mode */
-    --erd-table-header: 210 100% 40%;
-    --erd-table-border: 215 28% 17%;
-    --erd-table-hover: 222.2 47.4% 15%;
-    --erd-row-hover: 222.2 47.4% 13%;
-    --erd-pk-color: 328 90% 62%;
-    --erd-fk-color: 210 100% 65%;
-    --erd-unique-color: 158 64% 52%;
+    --erd-table-header: 217 91% 40%;
+    --erd-table-border: 217.2 32.6% 20%;
+    --erd-table-hover: 217 91% 18%;
+    --erd-row-hover: 217 91% 15%;
+    --erd-pk-color: 340 82% 72%;
+    --erd-fk-color: 27 98% 64%;
+    --erd-unique-color: 174 62% 57%;
   }
 }
 
@@ -117,6 +114,9 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.01em;
   }
 }
 
@@ -140,21 +140,20 @@
   .text-erd-fk-color {
     color: var(--erd-fk-color);
   }
-
   .text-erd-unique-color {
     color: var(--erd-unique-color);
   }
 
   .react-flow__node {
-    @apply rounded-md shadow-md transition-shadow duration-200;
+    @apply rounded-xl shadow-table bg-card border border-erd-table-border transition-shadow duration-200;
   }
 
   .react-flow__node:hover {
-    @apply shadow-lg;
+    @apply shadow-table-hover;
   }
 
   .react-flow__handle {
-    @apply w-2 h-2 bg-primary border-2 border-white dark:border-gray-800;
+    @apply w-2 h-2 bg-primary border-2 border-white dark:border-gray-800 rounded-full transition-colors duration-150;
   }
 
   .react-flow__handle:hover {
@@ -162,7 +161,7 @@
   }
 
   .react-flow__edge-path {
-    @apply stroke-primary stroke-[1.5px];
+    @apply stroke-primary stroke-[2px];
   }
 
   .react-flow__edge.selected .react-flow__edge-path {
@@ -171,24 +170,28 @@
 
   /* ER Diagram Table Styling */
   .table-node {
-    @apply bg-card border border-erd-table-border rounded-md overflow-hidden 
-           min-w-[220px] transition-all duration-200;
+    @apply bg-card border border-erd-table-border rounded-xl overflow-hidden min-w-[240px] shadow-table transition-all duration-200;
   }
 
   .table-node:hover {
-    @apply shadow-lg;
+    @apply shadow-table-hover;
   }
 
   .table-node__header {
-    @apply bg-erd-table-header text-white p-3 font-semibold flex items-center justify-between;
+    @apply bg-erd-table-header text-white p-3 font-semibold flex items-center justify-between shadow-sm tracking-wide;
+    letter-spacing: 0.02em;
   }
 
   .table-node__content {
-    @apply p-0 max-h-[300px] overflow-y-auto;
+    @apply p-0 max-h-[320px] overflow-y-auto;
   }
 
   .table-node__row {
-    @apply flex items-center p-2 border-b border-erd-table-border;
+    @apply flex items-center p-2 border-b border-erd-table-border transition-colors duration-150;
+  }
+
+  .table-node__row:nth-child(even) {
+    @apply bg-erd-table-hover;
   }
 
   .table-node__row:hover {
@@ -224,19 +227,33 @@
   }
 
   .table-node__add-column {
-    @apply w-full py-2 px-3 text-center bg-secondary border-none border-t 
-           border-erd-table-border cursor-pointer text-secondary-foreground 
-           font-medium transition-all duration-200;
+    @apply w-full py-2 px-3 text-center bg-secondary border-none border-t border-erd-table-border cursor-pointer text-secondary-foreground font-medium transition-all duration-200 rounded-b-xl;
   }
 
   .table-node__add-column:hover {
     @apply bg-erd-table-hover text-primary;
   }
 
+  /* Sidebar Styling */
+  .sidebar {
+    @apply bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border min-w-[220px] max-w-[320px] h-full flex flex-col shadow-card transition-all duration-200;
+  }
+  .sidebar__section {
+    @apply px-4 py-3 border-b border-sidebar-border font-semibold text-sm tracking-wide;
+  }
+  .sidebar__item {
+    @apply px-4 py-2 cursor-pointer rounded-md transition-colors duration-150;
+  }
+  .sidebar__item--active {
+    @apply bg-sidebar-primary text-sidebar-primary-foreground;
+  }
+  .sidebar__item:hover:not(.sidebar__item--active) {
+    @apply bg-sidebar-accent text-sidebar-accent-foreground;
+  }
+
   /* SQL Panel Styling */
   .sql-panel {
-    @apply h-full overflow-auto bg-card dark:bg-slate-900 text-foreground 
-           font-mono text-sm leading-relaxed;
+    @apply h-full overflow-auto bg-card dark:bg-slate-900 text-foreground font-mono text-sm leading-relaxed rounded-xl shadow-card transition-all duration-200;
   }
 
   .sql-panel__content {
@@ -266,6 +283,6 @@
 
   /* Relationship suggestion tooltip */
   .relationship-suggestion {
-    @apply bg-black/80 text-white rounded px-3 py-2 text-xs absolute z-10 pointer-events-none max-w-[250px];
+    @apply bg-black/80 text-white rounded px-3 py-2 text-xs absolute z-10 pointer-events-none max-w-[250px] shadow-lg;
   }
 }

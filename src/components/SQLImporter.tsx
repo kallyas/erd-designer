@@ -236,7 +236,15 @@ CREATE TABLE posts (
 
   const generatePreview = (sql: string) => {
     try {
-      const diagram = parseSQL(sql);
+      let diagram = parseSQL(sql);
+      // Patch: Ensure all nodes have type 'tableNode'
+      diagram = {
+        ...diagram,
+        nodes: diagram.nodes.map((node) => ({
+          ...node,
+          type: node.type || "tableNode",
+        })),
+      };
       setPreviewData(diagram);
       setPreviewMode(true);
     } catch (err) {
@@ -255,18 +263,33 @@ CREATE TABLE posts (
     try {
       // If we already have a preview, use that
       if (previewData) {
-        onImport(previewData);
+        // Patch: Ensure all nodes have type 'tableNode'
+        const diagram = {
+          ...previewData,
+          nodes: previewData.nodes.map((node) => ({
+            ...node,
+            type: node.type || "tableNode",
+          })),
+        };
+        onImport(diagram);
         reset();
         return;
       }
 
       // Otherwise parse the SQL
-      const diagram = parseSQL(sqlCode);
+      let diagram = parseSQL(sqlCode);
       if (diagram.nodes.length === 0) {
         setError("No tables found in SQL");
         return;
       }
-
+      // Patch: Ensure all nodes have type 'tableNode'
+      diagram = {
+        ...diagram,
+        nodes: diagram.nodes.map((node) => ({
+          ...node,
+          type: node.type || "tableNode",
+        })),
+      };
       onImport(diagram);
       reset();
       toast.success(`Imported ${diagram.nodes.length} tables successfully`);
