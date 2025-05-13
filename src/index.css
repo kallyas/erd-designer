@@ -286,3 +286,9 @@
     @apply bg-black/80 text-white rounded px-3 py-2 text-xs absolute z-10 pointer-events-none max-w-[250px] shadow-lg;
   }
 }
+
+@layer utilities {
+  .bg-sidebar-background {
+    background-color: hsl(var(--sidebar-background));
+  }
+}
