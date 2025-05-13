@@ -62,7 +62,6 @@ interface TableNodeProps extends NodeProps {
   isConnectable: boolean;
 }
 
-// src/components/TableNode.tsx (continued)
 const TableNode = ({ id, data, isConnectable, selected }: TableNodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tableName, setTableName] = useState(data.tableName);
