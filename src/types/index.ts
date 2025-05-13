@@ -79,6 +79,7 @@ export interface DiagramState {
   version?: string;
   lastModified?: Date;
   dialect?: string;
+  description?: string;
 }
 
 export interface RelationshipSuggestion {
