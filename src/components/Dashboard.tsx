@@ -454,7 +454,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
                 </div>
-                // src/components/Dashboard.tsx (continued)
                 <div className="space-y-2">
                   <div className="text-sm text-muted-foreground">
                     Foreign Keys
