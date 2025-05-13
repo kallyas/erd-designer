@@ -14,8 +14,7 @@ import {
   ShieldCheck, 
   GitCompare, 
   FileType, 
-  FileText, 
-  FileExport, 
+  FileText as FileExport, 
   Users, 
   Zap 
 } from "lucide-react";
@@ -96,7 +95,7 @@ const AdvancedFeaturesPanel = ({
             Versions
           </TabsTrigger>
           <TabsTrigger value="templates">
-            <FileText className="h-4 w-4 mr-1" />
+            <FileExport className="h-4 w-4 mr-1" />
             Templates
           </TabsTrigger>
           <TabsTrigger value="export">
