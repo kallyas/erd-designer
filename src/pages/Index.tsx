@@ -1,8 +1,7 @@
-// src/pages/Index.tsx (updated)
 import { useState, useRef, useCallback } from "react";
-import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
+import { ReactFlowProvider } from "@xyflow/react";
 import ERDCanvas from "@/components/ERDCanvas";
-import Sidebar from "@/components/Sidebar";
+import { Sidebar } from "@/components/Sidebar";
 import SQLPanel from "@/components/SQLPanel";
 import Dashboard from "@/components/Dashboard"; // Import our new Dashboard component
 import { DiagramState, TableNode, RelationshipEdge } from "@/types";
@@ -21,6 +20,8 @@ const Index = () => {
   const [sqlDialect, setSqlDialect] = useState("mysql");
   const [activeLayout, setActiveLayout] = useState("default");
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
+  const [isSqlPanelVisible, setIsSqlPanelVisible] = useState(true); // Or false by default
+  const [isSqlPanelPinned, setIsSqlPanelPinned] = useState(false); // Panel is not pinned
 
   const erdCanvasRef = useRef<{
     addNewTable: (position?: { x: number; y: number }) => void;
@@ -59,6 +60,7 @@ const Index = () => {
 
   // Load diagram
   const handleLoadDiagram = useCallback((loadedDiagramState: DiagramState) => {
+    console.log("Diagram loaded:", loadedDiagramState);
     setDiagramState(loadedDiagramState);
   }, []);
 
@@ -88,6 +90,20 @@ const Index = () => {
   const handleDiagramUpdate = useCallback((updatedDiagram: DiagramState) => {
     setDiagramState(updatedDiagram);
   }, []);
+
+  const handleToggleSqlPanel = () => {
+    setIsSqlPanelVisible((prev) => !prev);
+  };
+
+  const handleToggleSqlPin = () => {
+    setIsSqlPanelPinned((prev) => {
+      // If unpinning, also hide the panel unless it was explicitly made visible
+      if (prev) setIsSqlPanelVisible(false);
+      // If pinning, make sure it's visible
+      else setIsSqlPanelVisible(true);
+      return !prev;
+    });
+  };
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -147,8 +163,15 @@ const Index = () => {
 
         <ResizableHandle withHandle />
 
-        <ResizablePanel defaultSize={30} minSize={15}>
-          <SQLPanel diagramState={diagramState} dialect={sqlDialect} />
+        <ResizablePanel defaultSize={0} minSize={0}>
+          <SQLPanel
+            isPinned={isSqlPanelPinned}
+            isVisible={isSqlPanelVisible}
+            onToggleVisibility={handleToggleSqlPin}
+            diagramState={diagramState}
+            initialDialect={sqlDialect}
+            onTogglePin={handleToggleSqlPin}
+          />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
