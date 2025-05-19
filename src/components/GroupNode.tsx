@@ -1,10 +1,9 @@
+
 // src/components/GroupNode.tsx
-import { memo, useState, useRef } from "react";
+import { memo, useState } from "react";
 import { Handle, Position, NodeProps, NodeResizer } from "@xyflow/react";
-import { Rnd } from "react-rnd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   Pencil, 
   Save, 
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-interface GroupNodeData {
+export interface GroupNodeData {
   id: string;
   label: string;
   description?: string;
@@ -27,13 +26,13 @@ interface GroupNodeData {
   collapsed?: boolean;
 }
 
+// Create proper NodeProps type for our GroupNode
 const GroupNode = memo(({ id, data, selected }: NodeProps<GroupNodeData>) => {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label || "Group");
   const [description, setDescription] = useState(data.description || "");
   const [isLocked, setIsLocked] = useState(data.locked || false);
   const [isCollapsed, setIsCollapsed] = useState(data.collapsed || false);
-  const [color, setColor] = useState(data.color || "#f3f4f6");
   
   // Get default colors based on the provided color or use a default
   const backgroundColor = data.color || "#f3f4f6";
@@ -84,8 +83,9 @@ const GroupNode = memo(({ id, data, selected }: NodeProps<GroupNodeData>) => {
     setIsEditing(false);
     
     // Simulate updating the node data
-    data.label = label;
-    data.description = description;
+    // Type casting needed since we're mutating a prop
+    (data as any).label = label;
+    (data as any).description = description;
     
     toast.success(`Group "${label}" updated`);
   };
@@ -93,7 +93,7 @@ const GroupNode = memo(({ id, data, selected }: NodeProps<GroupNodeData>) => {
   const handleToggleLock = () => {
     // Toggle lock state
     setIsLocked(!isLocked);
-    data.locked = !isLocked;
+    (data as any).locked = !isLocked;
     
     toast.success(isLocked ? "Group unlocked" : "Group locked");
   };
@@ -101,7 +101,7 @@ const GroupNode = memo(({ id, data, selected }: NodeProps<GroupNodeData>) => {
   const handleToggleCollapse = () => {
     // Toggle collapsed state
     setIsCollapsed(!isCollapsed);
-    data.collapsed = !isCollapsed;
+    (data as any).collapsed = !isCollapsed;
   };
   
   const handleDelete = () => {

@@ -1,3 +1,4 @@
+
 // src/components/ERDCanvas.tsx
 import {
   useCallback,
@@ -16,9 +17,9 @@ import {
   addEdge,
   Connection,
   Node,
-  Edge, // Added Edge for completeness
-  NodeChange, // For proper typing
-  EdgeChange, // For proper typing
+  Edge,
+  NodeChange,
+  EdgeChange,
   MarkerType,
   useReactFlow,
   Panel,
@@ -26,12 +27,14 @@ import {
   EdgeTypes,
   ConnectionLineType,
   ConnectionMode,
-  MiniMap, // Import MiniMap
+  MiniMap,
+  BackgroundVariant,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import TableNode from "./TableNode";
 import GroupNode from "./GroupNode";
+import { GroupNodeData } from "./GroupNode";
 import CustomEdge from "./CustomEdge";
 import {
   TableData,
@@ -55,8 +58,8 @@ import {
   Flashlight,
   Workflow,
   GitFork,
-  PlusCircle, // For Add Table
-  BoxSelect, // For Create Group
+  PlusCircle,
+  BoxSelect,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
@@ -98,8 +101,8 @@ export interface ERDCanvasProps {
 const ERDCanvas = forwardRef(
   (
     {
-      onNodesChange: onNodesChangeProp, // Renamed to avoid conflict with internal handler
-      onEdgesChange: onEdgesChangeProp, // Renamed
+      onNodesChange: onNodesChangeProp,
+      onEdgesChange: onEdgesChangeProp,
       initialDiagram,
       readOnly = false,
       relationshipStyle = "arrows",
@@ -118,13 +121,13 @@ const ERDCanvas = forwardRef(
       y: number;
       suggestion: RelationshipSuggestion;
     } | null>(null);
-    const [currentLayout, setCurrentLayout] = useState("default"); // Can be used to highlight active layout
+    const [currentLayout, setCurrentLayout] = useState("default");
     const [snapToGrid, setSnapToGrid] = useState(true);
     const [activeUsers, setActiveUsers] = useState<{ id: string; name: string; color: string }[]>([
       { id: "u1", name: "You", color: "#4CAF50" },
-    ]); // Mock data
-    const [lockedNodes, setLockedNodes] = useState<string[]>([]); // IDs of locked nodes
-    const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]); // IDs of selected nodes
+    ]);
+    const [lockedNodes, setLockedNodes] = useState<string[]>([]);
+    const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
     const [showMinimap, setShowMinimap] = useState(false);
     const [showAISuggestions, setShowAISuggestions] = useState(true);
     const [activeGroups, setActiveGroups] = useState<{ id: string; name: string; nodes: string[] }[]>([]);
@@ -141,23 +144,26 @@ const ERDCanvas = forwardRef(
 
     // Propagate nodes/edges changes to parent component
     useEffect(() => {
-      onNodesChangeProp(nodes as TableNodeType[]);
+      onNodesChangeProp(nodes);
     }, [nodes, onNodesChangeProp]);
 
     useEffect(() => {
-      onEdgesChangeProp(edges as RelationshipEdge[]);
+      onEdgesChangeProp(edges);
     }, [edges, onEdgesChangeProp]);
 
     // Generate relationship suggestions
     useEffect(() => {
-      if (nodes.length > 1 && !readOnly) { // No suggestions if readOnly or not enough nodes
+      if (nodes.length > 1 && !readOnly) {
         const tableData = nodes.map(node => node.data);
-        const newSuggestions = suggestRelationships(tableData);
+        // Cast needed to fix type errors while maintaining the core functionality
+        const newSuggestions = suggestRelationships(tableData as TableData[]);
         setSuggestions(newSuggestions);
 
         if (showAISuggestions) {
-          // Consider debouncing or making this on-demand for performance
-          const advSuggestions = suggestAdvancedRelationships({ nodes, edges });
+          const advSuggestions = suggestAdvancedRelationships({ 
+            nodes: nodes as unknown as Node[], 
+            edges: edges as unknown as Edge[] 
+          });
           setAdvancedSuggestions(advSuggestions);
         } else {
           setAdvancedSuggestions([]);
@@ -172,20 +178,17 @@ const ERDCanvas = forwardRef(
     // Expose API to parent
     useImperativeHandle(ref, () => ({
       addNewTable: (position = { x: Math.random() * 400, y: Math.random() * 400 }) => addNewTable(position),
-      getNodes: () => nodes, // Returns current internal nodes
-      getEdges: () => edges, // Returns current internal edges
+      getNodes: () => nodes,
+      getEdges: () => edges,
       applyLayout: (layout: string) => applyLayout(layout),
       setTableStyle: (style: string) => {
         console.log("Set table style (visual update not fully implemented):", style);
-        // To implement: setNodes(nds => nds.map(n => ({ ...n, data: { ...n.data, style } })))
       },
       setRelationshipStyle: (style: string) => {
         console.log("Set relationship style (visual update not fully implemented):", style);
-        // To implement: update edge types/styles based on new style
       },
       setColorScheme: (scheme: string) => {
         console.log("Set color scheme (visual update not fully implemented):", scheme);
-        // To implement: update node and edge colors
       },
       getDiagramState: (): DiagramState => ({ nodes, edges }),
       centerView: () => reactFlowInstance.fitView(),
@@ -197,7 +200,8 @@ const ERDCanvas = forwardRef(
     const handleNodesChange = useCallback(
       (changes: NodeChange[]) => {
         if (readOnly) return;
-        onNodesChangeInternal(changes);
+        // Type assertion to match the library's expected type
+        onNodesChangeInternal(changes as NodeChange<TableNodeType>[]);
       },
       [onNodesChangeInternal, readOnly]
     );
@@ -205,7 +209,8 @@ const ERDCanvas = forwardRef(
     const handleEdgesChange = useCallback(
       (changes: EdgeChange[]) => {
         if (readOnly) return;
-        onEdgesChangeInternal(changes);
+        // Type assertion to match the library's expected type
+        onEdgesChangeInternal(changes as EdgeChange<RelationshipEdge>[]);
       },
       [onEdgesChangeInternal, readOnly]
     );
@@ -213,27 +218,38 @@ const ERDCanvas = forwardRef(
     const applyLayout = useCallback(
       (layout: string) => {
         if (readOnly || nodes.length <= 1) {
-          if (nodes.length <=1) toast.info("Need more than one table to apply a layout.");
+          if (nodes.length <= 1) toast.info("Need more than one table to apply a layout.");
           return;
         }
         
         let updatedNodes;
-        const currentNodes = reactFlowInstance.getNodes(); // Get latest for layout
+        const currentNodes = reactFlowInstance.getNodes();
         const currentEdges = reactFlowInstance.getEdges();
 
         switch (layout) {
-          case "grid": updatedNodes = applyGridLayout(currentNodes); break;
-          case "circular": updatedNodes = applyCircularLayout(currentNodes); break;
-          case "hierarchical": updatedNodes = applyTreeLayout(currentNodes, currentEdges); break;
-          case "force": updatedNodes = applyForceDirectedLayout(currentNodes, currentEdges); break;
-          default: return;
+          case "grid": 
+            updatedNodes = applyGridLayout(currentNodes as Node[]); 
+            break;
+          case "circular": 
+            updatedNodes = applyCircularLayout(currentNodes as Node[]); 
+            break;
+          case "hierarchical": 
+            updatedNodes = applyTreeLayout(currentNodes as Node[], currentEdges as Edge[]); 
+            break;
+          case "force": 
+            updatedNodes = applyForceDirectedLayout(currentNodes as Node[], currentEdges as Edge[]); 
+            break;
+          default: 
+            return;
         }
-        setNodes(updatedNodes as TableNodeType[]);
+        
+        // Type assertion to maintain compatibility
+        setNodes(updatedNodes as unknown as TableNodeType[]);
         setCurrentLayout(layout);
         reactFlowInstance.fitView({duration: 300});
         toast.success(`Applied ${layout} layout`);
       },
-      [nodes.length, readOnly, setNodes, reactFlowInstance] // Edges might be needed if layout uses them
+      [nodes.length, readOnly, setNodes, reactFlowInstance]
     );
 
     const onConnect = useCallback(
@@ -241,7 +257,7 @@ const ERDCanvas = forwardRef(
         if (readOnly) return;
 
         let markerType = MarkerType.ArrowClosed;
-        if (relationshipStyle === 'crow') markerType = MarkerType.Arrow; // Placeholder for actual crow's foot
+        if (relationshipStyle === 'crow') markerType = MarkerType.Arrow;
 
         const newEdge: RelationshipEdge = {
           id: `edge-${Date.now()}-${connection.source}-${connection.target}`,
@@ -259,23 +275,23 @@ const ERDCanvas = forwardRef(
                    colorScheme === 'colorful' ? '#6366F1' :
                    colorScheme === 'pastel' ? '#8B5CF6' : '#525252',
           },
-          type: relationshipStyle === 'lines' ? 'default' : 'custom', // Assumes CustomEdge handles styling
+          type: relationshipStyle === 'lines' ? 'default' : 'custom',
           data: {
-            relationshipType: 'one-to-many', // Default, can be made configurable
+            relationshipType: 'one-to-many', 
             sourceColumn: '',
             targetColumn: '',
           },
         };
         setEdges((eds) => addEdge(newEdge, eds));
 
-        // Update foreign key in target table (simplified example)
+        // Update foreign key in target table
         const sourceNode = nodes.find(n => n.id === connection.source);
         const targetNode = nodes.find(n => n.id === connection.target);
 
         if (sourceNode && targetNode) {
           const sourceTableData = sourceNode.data as TableData;
-          const targetTableData = { ...targetNode.data } as TableData; // Clone for modification
-          targetTableData.columns = [...targetTableData.columns]; // Clone columns array
+          const targetTableData = { ...targetNode.data } as TableData;
+          targetTableData.columns = [...targetTableData.columns]; 
 
           const sourcePrimaryKey = sourceTableData.columns.find(col => col.isPrimaryKey);
           if (sourcePrimaryKey) {
@@ -339,9 +355,8 @@ const ERDCanvas = forwardRef(
       [readOnly, tableStyle, colorScheme, setNodes]
     );
 
-    const onSelectionChange = useCallback(({ nodes: selectedNodesList, edges: selectedEdgesList }: { nodes: Node[], edges: Edge[] }) => {
+    const onSelectionChange = useCallback(({ nodes: selectedNodesList }: { nodes: Node[], edges: Edge[] }) => {
       setSelectedNodeIds(selectedNodesList.map(node => node.id));
-      // selectedEdgesList can also be stored if needed
     }, []);
 
     const deleteSelectedNodes = useCallback(() => {
@@ -360,7 +375,7 @@ const ERDCanvas = forwardRef(
       setSelectedNodeIds([]);
     }, [readOnly, selectedNodeIds, lockedNodes, setNodes, setEdges]);
 
-    // Toggle node lock (example, actual lock logic might be in TableNode)
+    // Toggle node lock
     const toggleNodeLock = useCallback((nodeId: string) => {
       if (readOnly) return;
       setLockedNodes(prev => {
@@ -373,7 +388,6 @@ const ERDCanvas = forwardRef(
           return [...prev, nodeId];
         }
       });
-      // This function would typically be passed to TableNode or called via context/event
     }, [readOnly]);
 
 
@@ -382,7 +396,7 @@ const ERDCanvas = forwardRef(
         if (!showAISuggestions || readOnly) return;
         const allSuggestions = [...suggestions, ...advancedSuggestions];
         const relevantSuggestions = allSuggestions.filter(
-          s => s.sourceTable === node.data.tableName || s.targetTable === node.data.tableName
+          s => s.sourceTable === (node.data as any).tableName || s.targetTable === (node.data as any).tableName
         );
         if (relevantSuggestions.length > 0) {
           const bestSuggestion = relevantSuggestions.sort((a, b) => b.confidence - a.confidence)[0];
@@ -405,7 +419,7 @@ const ERDCanvas = forwardRef(
       if (sourceNode && targetNode) {
         onConnect({
           source: sourceNode.id, target: targetNode.id,
-          sourceHandle: null, targetHandle: null, // Let React Flow determine handles or specify if needed
+          sourceHandle: null, targetHandle: null,
         });
         setShowSuggestion(null);
         toast.success("Applied suggested relationship!");
@@ -416,14 +430,12 @@ const ERDCanvas = forwardRef(
 
     const createGroup = useCallback(() => {
       if (readOnly || selectedNodeIds.length < 2) {
-        toast.warn("Select at least 2 tables to create a group.");
+        toast.warning("Select at least 2 tables to create a group.");
         return;
       }
       const groupName = `Group ${activeGroups.length + 1}`;
       const newGroup = { id: `group-${Date.now()}`, name: groupName, nodes: [...selectedNodeIds] };
       setActiveGroups(prev => [...prev, newGroup]);
-      // To visually represent the group, you would add a 'groupNode' to the `nodes` state here.
-      // This part is a larger feature involving node nesting or custom group rendering.
       toast.success(`Created group "${groupName}" with ${selectedNodeIds.length} tables. (Visual grouping WIP)`);
     }, [readOnly, selectedNodeIds, activeGroups]);
 
@@ -437,7 +449,7 @@ const ERDCanvas = forwardRef(
     }), [relationshipStyle, colorScheme]);
 
     return (
-      <div className="h-full w-full relative"> {/* Added relative for positioning context */}
+      <div className="h-full w-full relative">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -454,8 +466,8 @@ const ERDCanvas = forwardRef(
           snapGrid={[15, 15]}
           minZoom={0.1}
           maxZoom={2.5}
-          defaultEdgeOptions={{ // Default for edges if not specified
-            style: { stroke: '#71717a', strokeWidth: 1.5 }, // zinc-500
+          defaultEdgeOptions={{
+            style: { stroke: '#71717a', strokeWidth: 1.5 },
             markerEnd: { type: MarkerType.ArrowClosed, color: '#71717a' },
           }}
           connectionLineStyle={connectionLineStyle}
@@ -464,16 +476,18 @@ const ERDCanvas = forwardRef(
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}
           elementsSelectable={!readOnly}
-          selectNodesOnDrag={true} // default is true
+          selectNodesOnDrag={true}
           zoomOnDoubleClick={!readOnly}
           proOptions={{ hideAttribution: true }}
         >
-          <Background color="#a3a3a3" gap={16} variant="dots" /> {/* Changed to dots for subtlety */}
+          <Background color="#a3a3a3" gap={16} variant={"dots" as BackgroundVariant} />
           <Controls showInteractive={!readOnly} />
           {showMinimap && (
             <MiniMap 
               nodeStrokeWidth={3} 
-              nodeColor={(n) => n.style?.background || '#efefef'} // Example color, adjust as needed
+              nodeColor={(n) => {
+                return (n.style?.background as string) || '#efefef';
+              }}
               pannable 
               zoomable
               className="bg-white/70 backdrop-blur-sm"
@@ -620,11 +634,11 @@ const ERDCanvas = forwardRef(
         {/* Relationship Suggestion Popup */}
         {showSuggestion && showAISuggestions && !readOnly && (
           <Card
-            className="fixed shadow-xl border bg-background" // Use fixed for viewport positioning
+            className="fixed shadow-xl border bg-background"
             style={{
-              left: Math.min(showSuggestion.x + 15, window.innerWidth - 320), // Keep in viewport
-              top: Math.min(showSuggestion.y + 15, window.innerHeight - 200), // Keep in viewport
-              zIndex: 1001, // Ensure it's above panels
+              left: Math.min(showSuggestion.x + 15, window.innerWidth - 320),
+              top: Math.min(showSuggestion.y + 15, window.innerHeight - 200),
+              zIndex: 1001,
               width: '300px',
             }}
           >

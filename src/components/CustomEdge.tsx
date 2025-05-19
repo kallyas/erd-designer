@@ -1,3 +1,4 @@
+
 // src/components/CustomEdge.tsx
 import { useMemo, FC } from "react";
 import {
@@ -7,9 +8,18 @@ import {
   getStraightPath,
   getSmoothStepPath,
 } from "@xyflow/react";
-import { RelationshipEdge } from "@/types";
+import { RelationshipEdge, RelationshipType } from "@/types";
 
-const CustomEdge: FC<EdgeProps<RelationshipEdge["data"]>> = ({
+// Define proper edge data type to match our RelationshipEdge
+interface CustomEdgeData {
+  relationshipType?: RelationshipType;
+  sourceColumn?: string;
+  targetColumn?: string;
+  onDelete?: 'CASCADE' | 'RESTRICT' | 'SET NULL' | 'SET DEFAULT' | 'NO ACTION';
+  onUpdate?: 'CASCADE' | 'RESTRICT' | 'SET NULL' | 'SET DEFAULT' | 'NO ACTION';
+}
+
+const CustomEdge: FC<EdgeProps<CustomEdgeData>> = ({
   id,
   sourceX,
   sourceY,
@@ -85,8 +95,8 @@ const CustomEdge: FC<EdgeProps<RelationshipEdge["data"]>> = ({
   
   const edgeStyle = getRelationshipStyle();
   const mergedStyle = {
-    ...edgeStyle,
     ...style,
+    ...edgeStyle,
   };
   
   // If selected, enhance the style

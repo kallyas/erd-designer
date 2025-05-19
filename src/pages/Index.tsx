@@ -162,7 +162,7 @@ const Index = () => {
   return (
     <div className="h-screen flex flex-col bg-white">
       <ResizablePanelGroup direction="vertical">
-        <ResizablePanel defaultSize={70} minSize={30} className="h-screen">
+        <ResizablePanel defaultSize={85} minSize={30} className="h-screen">
           <div className="flex h-full">
             <ReactFlowProvider>
               <Sidebar
@@ -220,7 +220,7 @@ const Index = () => {
 
         <ResizableHandle withHandle />
 
-        <ResizablePanel defaultSize={0} minSize={0}>
+        <ResizablePanel defaultSize={15} minSize={0}>
           <SQLPanel
             isPinned={isSqlPanelPinned}
             isVisible={isSqlPanelVisible}
