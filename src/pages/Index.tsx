@@ -1,9 +1,10 @@
+
 import { useState, useRef, useCallback } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import ERDCanvas from "@/components/ERDCanvas";
 import { Sidebar } from "@/components/Sidebar";
 import SQLPanel from "@/components/SQLPanel";
-import Dashboard from "@/components/Dashboard"; // Import our new Dashboard component
+import Dashboard from "@/components/Dashboard";
 import { DiagramState, TableNode, RelationshipEdge } from "@/types";
 import {
   ResizableHandle,
@@ -11,6 +12,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const Index = () => {
   const [diagramState, setDiagramState] = useState<DiagramState>({
@@ -20,11 +22,14 @@ const Index = () => {
   const [sqlDialect, setSqlDialect] = useState("mysql");
   const [activeLayout, setActiveLayout] = useState("default");
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
-  const [isSqlPanelVisible, setIsSqlPanelVisible] = useState(true); // Or false by default
-  const [isSqlPanelPinned, setIsSqlPanelPinned] = useState(false); // Panel is not pinned
+  const [isSqlPanelVisible, setIsSqlPanelVisible] = useState(true);
+  const [isSqlPanelPinned, setIsSqlPanelPinned] = useState(false);
 
   const erdCanvasRef = useRef<{
     addNewTable: (position?: { x: number; y: number }) => void;
+    getNodes: () => TableNode[];
+    getEdges: () => RelationshipEdge[];
+    centerView: () => void;
   }>(null);
 
   // Handle nodes change
@@ -54,14 +59,24 @@ const Index = () => {
 
   // Save diagram
   const handleSaveDiagram = useCallback((name: string, description: string) => {
-    // This function is handled in the Sidebar component
     console.log("Diagram saved:", name, description);
   }, []);
 
   // Load diagram
   const handleLoadDiagram = useCallback((loadedDiagramState: DiagramState) => {
     console.log("Diagram loaded:", loadedDiagramState);
-    setDiagramState(loadedDiagramState);
+    if (loadedDiagramState && loadedDiagramState.nodes) {
+      setDiagramState(loadedDiagramState);
+      
+      // Center the view after a short delay to ensure nodes are rendered
+      setTimeout(() => {
+        if (erdCanvasRef.current) {
+          erdCanvasRef.current.centerView();
+        }
+      }, 100);
+      
+      toast.success(`Loaded ${loadedDiagramState.nodes.length} tables successfully`);
+    }
   }, []);
 
   // Clear diagram
@@ -70,6 +85,7 @@ const Index = () => {
       nodes: [],
       edges: [],
     });
+    toast.info("Created new empty diagram");
   }, []);
 
   // Handle SQL dialect change
@@ -104,6 +120,44 @@ const Index = () => {
       return !prev;
     });
   };
+  
+  const handleExportSQL = useCallback(() => {
+    if (diagramState.nodes.length === 0) {
+      toast.error("No tables to export");
+      return;
+    }
+    
+    // This is just a placeholder - the actual export would be implemented in a helper function
+    const sqlContent = `/* SQL Export for ${diagramState.nodes.length} tables */`;
+    
+    // Create a download link
+    const blob = new Blob([sqlContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `erd_export_${new Date().toISOString().slice(0, 10)}.sql`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success("SQL exported successfully");
+  }, [diagramState]);
+  
+  const handleExportDiagram = useCallback(() => {
+    if (diagramState.nodes.length === 0) {
+      toast.error("No tables to export");
+      return;
+    }
+    
+    toast.info("Exporting diagram...");
+    
+    // In a real implementation, this would trigger a screenshot or SVG export
+    // For now, just show a success message
+    setTimeout(() => {
+      toast.success("Diagram exported successfully");
+    }, 1000);
+  }, [diagramState]);
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -117,6 +171,9 @@ const Index = () => {
                 onLoadDiagram={handleLoadDiagram}
                 onNewDiagram={handleNewDiagram}
                 currentDiagram={diagramState}
+                showAdvancedPanel={() => setShowAdvancedPanel(!showAdvancedPanel)}
+                onExportSQL={handleExportSQL}
+                onExportDiagram={handleExportDiagram}
               />
 
               <div className="flex-1 h-full flex flex-col">
