@@ -1,4 +1,3 @@
-
 // src/components/ERDCanvas.tsx
 import {
   useCallback,
@@ -43,6 +42,7 @@ import {
   RelationshipSuggestion,
   DiagramState,
 } from "@/types";
+import { RelationshipEdgeData } from "./types";
 import { suggestRelationships } from "@/utils/sqlGenerator";
 import { suggestAdvancedRelationships } from "@/utils/aiSuggestions";
 import {
@@ -154,12 +154,14 @@ const ERDCanvas = forwardRef(
     // Generate relationship suggestions
     useEffect(() => {
       if (nodes.length > 1 && !readOnly) {
+        // Extract TableData from nodes to pass to suggestion utility
         const tableData = nodes.map(node => node.data);
-        // Cast needed to fix type errors while maintaining the core functionality
-        const newSuggestions = suggestRelationships(tableData as TableData[]);
+        // Generate suggestions using the extracted data
+        const newSuggestions = suggestRelationships(tableData);
         setSuggestions(newSuggestions);
 
         if (showAISuggestions) {
+          // For AI suggestions, use the whole node/edge objects but cast to the expected types
           const advSuggestions = suggestAdvancedRelationships({ 
             nodes: nodes as unknown as Node[], 
             edges: edges as unknown as Edge[] 
@@ -173,7 +175,6 @@ const ERDCanvas = forwardRef(
         setAdvancedSuggestions([]);
       }
     }, [nodes, edges, showAISuggestions, readOnly]);
-
 
     // Expose API to parent
     useImperativeHandle(ref, () => ({
@@ -228,16 +229,16 @@ const ERDCanvas = forwardRef(
 
         switch (layout) {
           case "grid": 
-            updatedNodes = applyGridLayout(currentNodes as Node[]); 
+            updatedNodes = applyGridLayout(currentNodes); 
             break;
           case "circular": 
-            updatedNodes = applyCircularLayout(currentNodes as Node[]); 
+            updatedNodes = applyCircularLayout(currentNodes); 
             break;
           case "hierarchical": 
-            updatedNodes = applyTreeLayout(currentNodes as Node[], currentEdges as Edge[]); 
+            updatedNodes = applyTreeLayout(currentNodes, currentEdges); 
             break;
           case "force": 
-            updatedNodes = applyForceDirectedLayout(currentNodes as Node[], currentEdges as Edge[]); 
+            updatedNodes = applyForceDirectedLayout(currentNodes, currentEdges); 
             break;
           default: 
             return;
@@ -390,7 +391,6 @@ const ERDCanvas = forwardRef(
       });
     }, [readOnly]);
 
-
     const handleNodeMouseEnter = useCallback(
       (event: React.MouseEvent, node: Node) => {
         if (!showAISuggestions || readOnly) return;
@@ -438,7 +438,6 @@ const ERDCanvas = forwardRef(
       setActiveGroups(prev => [...prev, newGroup]);
       toast.success(`Created group "${groupName}" with ${selectedNodeIds.length} tables. (Visual grouping WIP)`);
     }, [readOnly, selectedNodeIds, activeGroups]);
-
 
     const connectionLineStyle = useMemo(() => ({
       stroke: colorScheme === 'monochrome' ? '#525252' :

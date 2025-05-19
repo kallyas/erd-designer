@@ -1,3 +1,4 @@
+
 // src/components/TableNode.tsx
 import { useState, useEffect } from "react";
 import { Handle, Position, useReactFlow, NodeProps } from "@xyflow/react";
@@ -28,7 +29,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TableData, ColumnType, Column, Constraint, CustomType } from "@/types";
+import { TableData, ColumnType, Column, Constraint } from "@/types";
 import {
   Key,
   Database,
@@ -200,7 +201,7 @@ const TableNode = ({ id, data, isConnectable, selected }: TableNodeProps) => {
       (c) => c.type === "DEFAULT"
     );
     setHasDefaultValue(!!defaultConstraint);
-    setDefaultValue(defaultConstraint?.defaultValue || "");
+    setDefaultValue(defaultConstraint?.defaultValue?.toString() || "");
 
     const checkConstraint = column.constraints?.find((c) => c.type === "CHECK");
     setHasCheckConstraint(!!checkConstraint);

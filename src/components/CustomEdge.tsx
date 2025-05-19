@@ -2,24 +2,16 @@
 // src/components/CustomEdge.tsx
 import { useMemo, FC } from "react";
 import {
-  EdgeProps,
   EdgeLabelRenderer,
   getBezierPath,
   getStraightPath,
   getSmoothStepPath,
+  BaseEdge,
 } from "@xyflow/react";
-import { RelationshipEdge, RelationshipType } from "@/types";
+import { RelationshipType } from "@/types";
+import { CustomEdgeProps } from "./types";
 
-// Define proper edge data type to match our RelationshipEdge
-interface CustomEdgeData {
-  relationshipType?: RelationshipType;
-  sourceColumn?: string;
-  targetColumn?: string;
-  onDelete?: 'CASCADE' | 'RESTRICT' | 'SET NULL' | 'SET DEFAULT' | 'NO ACTION';
-  onUpdate?: 'CASCADE' | 'RESTRICT' | 'SET NULL' | 'SET DEFAULT' | 'NO ACTION';
-}
-
-const CustomEdge: FC<EdgeProps<CustomEdgeData>> = ({
+const CustomEdge: FC<CustomEdgeProps> = ({
   id,
   sourceX,
   sourceY,
@@ -107,13 +99,7 @@ const CustomEdge: FC<EdgeProps<CustomEdgeData>> = ({
   
   return (
     <>
-      <path
-        id={id}
-        style={mergedStyle}
-        className="react-flow__edge-path"
-        d={edgePath}
-        markerEnd={markerEnd}
-      />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={mergedStyle} />
       
       {/* Render the label only if columns are specified */}
       {(sourceColumn || targetColumn) && (

@@ -1,7 +1,7 @@
 
 // src/components/GroupNode.tsx
 import { memo, useState } from "react";
-import { Handle, Position, NodeProps, NodeResizer } from "@xyflow/react";
+import { Handle, Position, NodeResizer } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -15,6 +15,7 @@ import {
   Minimize 
 } from "lucide-react";
 import { toast } from "sonner";
+import { GroupNodeProps } from "./types";
 
 export interface GroupNodeData {
   id: string;
@@ -27,7 +28,7 @@ export interface GroupNodeData {
 }
 
 // Create proper NodeProps type for our GroupNode
-const GroupNode = memo(({ id, data, selected }: NodeProps<GroupNodeData>) => {
+const GroupNode = memo(({ id, data, selected }: GroupNodeProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label || "Group");
   const [description, setDescription] = useState(data.description || "");

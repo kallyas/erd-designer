@@ -1,8 +1,8 @@
 
 // src/components/types/index.ts
-import { NodeProps as ReactFlowNodeProps } from "@xyflow/react";
+import { NodeProps as ReactFlowNodeProps, Edge, EdgeProps } from "@xyflow/react";
 import { GroupNodeData } from "../GroupNode";
-import { TableData } from "@/types";
+import { TableData, RelationshipType } from "@/types";
 
 // Common component prop types to improve consistency across components
 export interface ERDComponentProps {
@@ -37,9 +37,12 @@ export type TableNodeComponentProps = ReactFlowNodeProps<TableData>;
 
 // Helper type for edge data
 export interface RelationshipEdgeData {
-  relationshipType?: string;
+  relationshipType?: RelationshipType;
   sourceColumn?: string;
   targetColumn?: string;
   onDelete?: string;
   onUpdate?: string;
 }
+
+// Custom edge type for the CustomEdge component
+export type CustomEdgeProps = EdgeProps<RelationshipEdgeData>;
